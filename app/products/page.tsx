@@ -1,0 +1,79 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import SectionTitle from "@/components/ui/SectionTitle";
+import TiltCard from "@/components/ui/TiltCard";
+import { FadeInGroup, FadeInItem } from "@/components/ui/FadeIn";
+import { products } from "@/data/products";
+
+const title = "Produk";
+const fullTitle = "Produk - Eleven Digital Indonesia";
+const description =
+  "Berbagai paket produk siap pakai untuk membantu bisnis kamu tampil lebih profesional, mulai dari website, e-commerce, hingga branding.";
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: "/products" },
+  openGraph: { title: fullTitle, description, url: "/products", type: "website" },
+  twitter: { title: fullTitle, description },
+};
+
+export default function ProductsPage() {
+  return (
+    <>
+      <Navbar />
+      <main>
+        <section className="relative bg-brand-paper pb-28 pt-40">
+          <div className="mx-auto max-w-6xl px-6">
+            <SectionTitle
+              eyebrow="Product"
+              title="Semua Produk Kami"
+              description="Jelajahi seluruh paket produk yang kami sediakan, mulai dari pengembangan website hingga desain kreatif."
+            />
+
+            <FadeInGroup className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {products.map((product) => (
+                <FadeInItem key={product.slug}>
+                  <Link href={`/products/${product.slug}`} data-cursor-hover>
+                    <TiltCard
+                      strength={8}
+                      className="group h-full overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)]"
+                    >
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          sizes="(max-width: 768px) 90vw, 32vw"
+                        />
+                      </div>
+                      <div className="p-6">
+                        <span className="mb-3 inline-block rounded-full bg-brand-blue/10 px-3 py-1 text-xs font-semibold text-brand-blue">
+                          {product.category}
+                        </span>
+                        <h3 className="font-heading text-lg font-semibold leading-snug text-ink-900">
+                          {product.name}
+                        </h3>
+                        <p className="mt-3 text-sm leading-relaxed text-brand-ink/60">
+                          {product.description}
+                        </p>
+                        <p className="mt-5 font-heading text-base font-semibold text-brand-blue">
+                          {product.price}
+                        </p>
+                      </div>
+                    </TiltCard>
+                  </Link>
+                </FadeInItem>
+              ))}
+            </FadeInGroup>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
+}

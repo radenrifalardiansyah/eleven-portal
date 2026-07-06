@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #ffffff;
+  color: #4c4c4c;
+  font-family: var(--font-noto-sans), sans-serif;
+}
+
+section[id] {
+  scroll-margin-top: 96px;
+}
+
+::selection {
+  background: #0053ff;
+  color: #ffffff;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #0053ff #fbfcff;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fbfcff;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0053ff;
+  border-radius: 999px;
+}
+
+.text-glow {
+  text-shadow: 0 0 30px rgba(0, 83, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+  }
+}
