@@ -18,7 +18,7 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative flex min-h-screen items-center overflow-hidden bg-white"
+      className="relative flex min-h-screen items-start overflow-hidden bg-white lg:items-center"
     >
       <div
         aria-hidden
@@ -34,7 +34,7 @@ export default function Hero() {
         style={{ animationDelay: "4s" }}
       />
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-32 lg:grid-cols-2 lg:pt-24">
+      <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-24 lg:grid-cols-2 lg:pt-24">
         <motion.div variants={container} initial="hidden" animate="visible">
           <motion.span
             variants={item}
