@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { can, type Action, type PermissionMap, type ModulePermission } from "@/lib/auth/permissions";
@@ -12,7 +13,12 @@ export type CurrentProfile = {
   permissions: PermissionMap;
 };
 
-export async function getCurrentProfile(): Promise<CurrentProfile | null> {
+/**
+ * Memoized per-request: the admin layout and every page both need the
+ * profile/permissions, but without this they'd each hit Supabase separately
+ * (auth + profiles + role_permissions = 3 round trips, doubled per navigation).
+ */
+export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -53,7 +59,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     role: profile.role,
     permissions,
   };
-}
+});
 
 /** Server-side guard for a page/route — redirects rather than trusting client-side role checks. */
 export async function requireModule(moduleKey: string, action: Action = "view"): Promise<CurrentProfile> {
