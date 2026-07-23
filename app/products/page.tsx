@@ -6,7 +6,7 @@ import Footer from "@/components/layout/Footer";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import { FadeInGroup, FadeInItem } from "@/components/ui/FadeIn";
-import { products } from "@/data/products";
+import { getPublishedProducts } from "@/lib/cms/public-products";
 
 const title = "Produk";
 const fullTitle = "Produk - Eleven Digital Indonesia";
@@ -21,7 +21,9 @@ export const metadata: Metadata = {
   twitter: { title: fullTitle, description },
 };
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await getPublishedProducts();
+
   return (
     <>
       <Navbar />

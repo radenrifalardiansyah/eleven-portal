@@ -9,9 +9,10 @@ import FadeIn from "@/components/ui/FadeIn";
 import TiltCard from "@/components/ui/TiltCard";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
-import { projects } from "@/data/projects";
+import { getPublishedProjects, getProjectBySlug } from "@/lib/cms/public-projects";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const projects = await getPublishedProjects();
   return projects.map((project) => ({ slug: project.slug }));
 }
 
@@ -21,7 +22,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const project = projects.find((item) => item.slug === slug);
+  const project = await getProjectBySlug(slug);
   if (!project) return {};
   const fullTitle = `${project.title} - Eleven Digital Indonesia`;
   return {
@@ -49,10 +50,11 @@ export default async function CaseStudyDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = projects.find((item) => item.slug === slug);
+  const project = await getProjectBySlug(slug);
   if (!project) notFound();
 
-  const related = projects.filter((item) => item.slug !== project.slug).slice(0, 3);
+  const allProjects = await getPublishedProjects();
+  const related = allProjects.filter((item) => item.slug !== project.slug).slice(0, 3);
 
   const creativeWorkJsonLd = {
     "@context": "https://schema.org",

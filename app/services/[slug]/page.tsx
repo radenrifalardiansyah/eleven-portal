@@ -9,11 +9,12 @@ import FadeIn from "@/components/ui/FadeIn";
 import TiltCard from "@/components/ui/TiltCard";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
-import { services } from "@/data/services";
+import { getPublishedServices, getServiceBySlug } from "@/lib/cms/public-services";
 
 const WHATSAPP_NUMBER = "62877234999550";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const services = await getPublishedServices();
   return services.map((service) => ({ slug: service.slug }));
 }
 
@@ -23,7 +24,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const service = services.find((item) => item.slug === slug);
+  const service = await getServiceBySlug(slug);
   if (!service) return {};
   const fullTitle = `${service.title} - Eleven Digital Indonesia`;
   return {
@@ -46,10 +47,11 @@ export default async function ServiceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const service = services.find((item) => item.slug === slug);
+  const service = await getServiceBySlug(slug);
   if (!service) notFound();
 
-  const related = services.filter((item) => item.slug !== service.slug).slice(0, 3);
+  const allServices = await getPublishedServices();
+  const related = allServices.filter((item) => item.slug !== service.slug).slice(0, 3);
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
     `Halo, saya tertarik dengan layanan "${service.title}". Bisa minta info lebih lanjut?`
   )}`;

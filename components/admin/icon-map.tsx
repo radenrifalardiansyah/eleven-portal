@@ -1,0 +1,32 @@
+import {
+  LayoutDashboard,
+  Package,
+  Layers,
+  Newspaper,
+  Users,
+  Briefcase,
+  Quote,
+  FileText,
+  Settings,
+  ShieldCheck,
+  UserCog,
+  Lock,
+  ListTree,
+  type LucideIcon,
+} from "lucide-react";
+
+export const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Package,
+  Layers,
+  Newspaper,
+  Users,
+  Briefcase,
+  Quote,
+  FileText,
+  Settings,
+  ShieldCheck,
+  UserCog,
+  Lock,
+  ListTree,
+};

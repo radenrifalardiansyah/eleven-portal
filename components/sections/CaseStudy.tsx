@@ -8,9 +8,9 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
-import { projects } from "@/data/projects";
+import type { PublicProject } from "@/lib/cms/public-projects";
 
-export default function CaseStudy() {
+export default function CaseStudy({ projects }: { projects: PublicProject[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, align: "center", containScroll: false },
     [AutoScroll({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true })]

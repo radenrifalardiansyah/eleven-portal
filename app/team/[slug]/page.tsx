@@ -10,7 +10,7 @@ import TiltCard from "@/components/ui/TiltCard";
 import TeamAvatar from "@/components/ui/TeamAvatar";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
-import { team } from "@/data/team";
+import { getPublishedTeamMembers, getTeamMemberBySlug } from "@/lib/cms/public-team";
 
 const SOCIAL_ICONS = {
   instagram: "/images/icon/instagram.svg",
@@ -18,7 +18,8 @@ const SOCIAL_ICONS = {
   twitter: "/images/icon/twitter.svg",
 } as const;
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const team = await getPublishedTeamMembers();
   return team.map((member) => ({ slug: member.slug }));
 }
 
@@ -28,7 +29,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const member = team.find((item) => item.slug === slug);
+  const member = await getTeamMemberBySlug(slug);
   if (!member) return {};
   const fullTitle = `${member.name} - Eleven Digital Indonesia`;
   return {
@@ -51,10 +52,11 @@ export default async function TeamDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const member = team.find((item) => item.slug === slug);
+  const member = await getTeamMemberBySlug(slug);
   if (!member) notFound();
 
-  const related = team.filter((item) => item.slug !== member.slug).slice(0, 4);
+  const allTeam = await getPublishedTeamMembers();
+  const related = allTeam.filter((item) => item.slug !== member.slug).slice(0, 4);
   const socialEntries = Object.entries(member.socials) as [keyof typeof SOCIAL_ICONS, string][];
   const sameAs = socialEntries.map(([, href]) => href).filter((href) => href !== "#");
 

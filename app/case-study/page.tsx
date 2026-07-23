@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import { FadeInGroup, FadeInItem } from "@/components/ui/FadeIn";
-import { projects } from "@/data/projects";
+import { getPublishedProjects } from "@/lib/cms/public-projects";
 
 const title = "Case Study";
 const fullTitle = "Case Study - Eleven Digital Indonesia";
@@ -22,7 +22,9 @@ export const metadata: Metadata = {
   twitter: { title: fullTitle, description },
 };
 
-export default function CaseStudyPage() {
+export default async function CaseStudyPage() {
+  const projects = await getPublishedProjects();
+
   return (
     <>
       <Navbar />

@@ -3,9 +3,8 @@
 import Image from "next/image";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Marquee from "@/components/ui/Marquee";
-import { clients } from "@/data/clients";
 
-export default function Testimonials() {
+export default function Testimonials({ clients }: { clients: string[] }) {
   return (
     <section className="relative overflow-hidden bg-brand-paper py-28">
       <div className="mx-auto max-w-6xl px-6">

@@ -10,9 +10,10 @@ import FadeIn from "@/components/ui/FadeIn";
 import TiltCard from "@/components/ui/TiltCard";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
-import { stories } from "@/data/stories";
+import { getPublishedStories, getStoryBySlug } from "@/lib/cms/public-stories";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const stories = await getPublishedStories();
   return stories.map((story) => ({ slug: story.slug }));
 }
 
@@ -22,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const story = stories.find((item) => item.slug === slug);
+  const story = await getStoryBySlug(slug);
   if (!story) return {};
   const fullTitle = `${story.title} - Eleven Digital Indonesia`;
   return {
@@ -51,10 +52,11 @@ export default async function StoryDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const story = stories.find((item) => item.slug === slug);
+  const story = await getStoryBySlug(slug);
   if (!story) notFound();
 
-  const related = stories.filter((item) => item.slug !== story.slug).slice(0, 3);
+  const allStories = await getPublishedStories();
+  const related = allStories.filter((item) => item.slug !== story.slug).slice(0, 3);
 
   const articleJsonLd = {
     "@context": "https://schema.org",

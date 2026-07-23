@@ -6,9 +6,9 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import TeamAvatar from "@/components/ui/TeamAvatar";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
-import { team } from "@/data/team";
+import type { PublicTeamMember } from "@/lib/cms/public-team";
 
-export default function Team() {
+export default function Team({ team }: { team: PublicTeamMember[] }) {
   const featured = team.slice(0, 4);
 
   return (

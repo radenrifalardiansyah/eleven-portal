@@ -8,9 +8,9 @@ import clsx from "clsx";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import TiltCard from "@/components/ui/TiltCard";
 import Reveal from "@/components/ui/Reveal";
-import { stories } from "@/data/stories";
+import type { PublicStory } from "@/lib/cms/public-stories";
 
-export default function Stories() {
+export default function Stories({ stories }: { stories: PublicStory[] }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selected, setSelected] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);

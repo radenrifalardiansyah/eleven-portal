@@ -11,6 +11,12 @@ import Products from "@/components/sections/Products";
 import Contact from "@/components/sections/Contact";
 import JsonLd from "@/components/seo/JsonLd";
 import { siteConfig } from "@/lib/seo";
+import { getPublishedProducts } from "@/lib/cms/public-products";
+import { getPublishedServices } from "@/lib/cms/public-services";
+import { getPublishedStories } from "@/lib/cms/public-stories";
+import { getPublishedTeamMembers } from "@/lib/cms/public-team";
+import { getPublishedProjects } from "@/lib/cms/public-projects";
+import { getPublishedClientLogos } from "@/lib/cms/public-testimonials";
 
 const websiteJsonLd = {
   "@context": "https://schema.org",
@@ -19,20 +25,27 @@ const websiteJsonLd = {
   url: siteConfig.url,
 };
 
-export default function Home() {
+export default async function Home() {
+  const products = await getPublishedProducts();
+  const services = await getPublishedServices();
+  const stories = await getPublishedStories();
+  const team = await getPublishedTeamMembers();
+  const projects = await getPublishedProjects();
+  const clientLogos = await getPublishedClientLogos();
+
   return (
     <>
       <JsonLd data={websiteJsonLd} />
       <Navbar />
       <main>
         <Hero />
-        <Services />
+        <Services services={services} />
         <About />
-        <CaseStudy />
-        <Testimonials />
-        <Products />
-        <Team />
-        <Stories />
+        <CaseStudy projects={projects} />
+        <Testimonials clients={clientLogos} />
+        <Products products={products} />
+        <Team team={team} />
+        <Stories stories={stories} />
         <Contact />
       </main>
       <Footer />

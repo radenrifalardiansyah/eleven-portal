@@ -10,11 +10,12 @@ import TiltCard from "@/components/ui/TiltCard";
 import ProductGallery from "@/components/sections/ProductGallery";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
-import { products } from "@/data/products";
+import { getPublishedProducts, getProductBySlug } from "@/lib/cms/public-products";
 
 const WHATSAPP_NUMBER = "62877234999550";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getPublishedProducts();
   return products.map((product) => ({ slug: product.slug }));
 }
 
@@ -24,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = products.find((item) => item.slug === slug);
+  const product = await getProductBySlug(slug);
   if (!product) return {};
   const fullTitle = `${product.name} - Eleven Digital Indonesia`;
   return {
@@ -57,10 +58,11 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = products.find((item) => item.slug === slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = products.filter((item) => item.slug !== product.slug).slice(0, 3);
+  const allProducts = await getPublishedProducts();
+  const related = allProducts.filter((item) => item.slug !== product.slug).slice(0, 3);
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
     `Halo, saya tertarik dengan produk "${product.name}". Bisa minta info lebih lanjut?`
   )}`;

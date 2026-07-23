@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import { FadeInGroup, FadeInItem } from "@/components/ui/FadeIn";
-import { stories } from "@/data/stories";
+import { getPublishedStories } from "@/lib/cms/public-stories";
 
 const title = "Stories";
 const fullTitle = "Stories - Eleven Digital Indonesia";
@@ -21,7 +21,9 @@ export const metadata: Metadata = {
   twitter: { title: fullTitle, description },
 };
 
-export default function StoriesPage() {
+export default async function StoriesPage() {
+  const stories = await getPublishedStories();
+
   return (
     <>
       <Navbar />

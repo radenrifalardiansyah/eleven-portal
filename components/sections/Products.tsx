@@ -6,9 +6,9 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
-import { products } from "@/data/products";
+import type { PublicProduct } from "@/lib/cms/public-products";
 
-export default function Products() {
+export default function Products({ products }: { products: PublicProduct[] }) {
   const featured = products.slice(0, 3);
 
   return (

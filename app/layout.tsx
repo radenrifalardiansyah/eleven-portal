@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Noto_Sans } from "next/font/google";
 import "./globals.css";
-import SmoothScroll from "@/components/ui/SmoothScroll";
-import Cursor from "@/components/ui/Cursor";
-import ScrollToTop from "@/components/ui/ScrollToTop";
+import AppChrome from "@/components/layout/AppChrome";
 import JsonLd from "@/components/seo/JsonLd";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import { siteConfig, absoluteUrl } from "@/lib/seo";
 
 const poppins = Poppins({
@@ -118,11 +117,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" className={`${poppins.variable} ${notoSans.variable}`}>
       <body>
         <JsonLd data={organizationJsonLd} />
-        <SmoothScroll>
-          <Cursor />
-          {children}
-          <ScrollToTop />
-        </SmoothScroll>
+        <ServiceWorkerRegistration />
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );

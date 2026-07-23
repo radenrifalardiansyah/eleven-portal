@@ -6,7 +6,7 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import TeamAvatar from "@/components/ui/TeamAvatar";
 import { FadeInGroup, FadeInItem } from "@/components/ui/FadeIn";
-import { team } from "@/data/team";
+import { getPublishedTeamMembers } from "@/lib/cms/public-team";
 
 const title = "Tim Kami";
 const fullTitle = "Tim Kami - Eleven Digital Indonesia";
@@ -20,7 +20,9 @@ export const metadata: Metadata = {
   twitter: { title: fullTitle, description },
 };
 
-export default function TeamPage() {
+export default async function TeamPage() {
+  const team = await getPublishedTeamMembers();
+
   return (
     <>
       <Navbar />

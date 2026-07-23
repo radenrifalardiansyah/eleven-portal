@@ -6,9 +6,9 @@ import { ArrowRight } from "lucide-react";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
-import { services } from "@/data/services";
+import type { PublicService } from "@/lib/cms/public-services";
 
-export default function Services() {
+export default function Services({ services }: { services: PublicService[] }) {
   const featured = services.slice(0, 6);
 
   return (
