@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, Link2, Check } from "lucide-react";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { getStatusOptions } from "@/components/admin/StatusOptions";
+import { uploadMediaFile } from "@/lib/supabase/upload";
+import TeamAvatar from "@/components/ui/TeamAvatar";
 import {
   createTeamMember,
   updateTeamMember,
@@ -43,6 +45,7 @@ export default function TeamMemberForm({
 }: {
   memberId?: string;
   defaultValues?: Partial<FormValues> & {
+    photo_url?: string | null;
     socials?: { instagram?: string; facebook?: string; twitter?: string };
   };
   canPublish: boolean;
@@ -51,11 +54,17 @@ export default function TeamMemberForm({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(defaultValues?.photo_url ?? "");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkValue, setLinkValue] = useState(defaultValues?.photo_url ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -74,6 +83,20 @@ export default function TeamMemberForm({
     },
   });
 
+  async function handlePhotoFile(file: File) {
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadMediaFile(file, "team");
+      setPhotoUrl(url);
+      setLinkValue(url);
+      toast.success("Foto diperbarui");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengunggah foto");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
     try {
@@ -84,6 +107,7 @@ export default function TeamMemberForm({
         bio: values.bio,
         long_bio: values.long_bio,
         email: values.email,
+        photo_url: photoUrl.trim() || null,
         socials: {
           ...(values.instagram ? { instagram: values.instagram } : {}),
           ...(values.facebook ? { facebook: values.facebook } : {}),
@@ -112,8 +136,68 @@ export default function TeamMemberForm({
     }
   }
 
+  const nameValue = watch("name");
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-ink-700">Foto</label>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full">
+            <TeamAvatar name={nameValue || "?"} photoUrl={photoUrl} className="h-full w-full" />
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="flex items-center gap-2 rounded-xl bg-brand-blue/10 px-4 py-2 text-sm font-medium text-brand-blue transition hover:bg-brand-blue/20 disabled:opacity-60"
+          >
+            {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            Upload Foto
+          </button>
+          <button
+            type="button"
+            onClick={() => setLinkMode((v) => !v)}
+            className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-4 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-900/5"
+          >
+            <Link2 className="h-4 w-4" />
+            Pakai Link
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handlePhotoFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {linkMode && (
+          <div className="flex gap-2">
+            <input
+              value={linkValue}
+              onChange={(e) => setLinkValue(e.target.value)}
+              placeholder="https://..."
+              className={inputClass}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoUrl(linkValue);
+                setLinkMode(false);
+              }}
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-blue-light"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-ink-500">Kosongkan untuk memakai avatar inisial nama otomatis</p>
+      </div>
+
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Nama" error={errors.name?.message}>
           <input {...register("name")} className={inputClass} />

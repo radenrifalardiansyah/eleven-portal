@@ -89,6 +89,7 @@ export type Database = {
           bio: string;
           long_bio: string;
           email: string;
+          photo_url: string | null;
           socials: { instagram?: string; facebook?: string; twitter?: string };
         }
       >;

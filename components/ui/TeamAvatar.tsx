@@ -1,3 +1,4 @@
+import Image from "next/image";
 import clsx from "clsx";
 
 function getInitials(name: string) {
@@ -9,7 +10,23 @@ function getInitials(name: string) {
     .join("");
 }
 
-export default function TeamAvatar({ name, className }: { name: string; className?: string }) {
+export default function TeamAvatar({
+  name,
+  photoUrl,
+  className,
+}: {
+  name: string;
+  photoUrl?: string | null;
+  className?: string;
+}) {
+  if (photoUrl) {
+    return (
+      <div className={clsx("relative overflow-hidden", className)}>
+        <Image src={photoUrl} alt={name} fill className="object-cover" unoptimized />
+      </div>
+    );
+  }
+
   return (
     <div
       className={clsx(

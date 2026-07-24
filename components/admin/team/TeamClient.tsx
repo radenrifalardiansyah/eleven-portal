@@ -107,7 +107,7 @@ export default function TeamClient({
         enableSorting: false,
         cell: ({ row }) => (
           <div className="h-10 w-10 overflow-hidden rounded-lg">
-            <TeamAvatar name={row.original.name} className="h-full w-full" />
+            <TeamAvatar name={row.original.name} photoUrl={row.original.photo_url} className="h-full w-full" />
           </div>
         ),
       },
@@ -188,7 +188,7 @@ export default function TeamClient({
         renderCard={(member) => (
           <TiltCard className="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink-900/5 bg-white shadow-sm">
             <div className="relative h-36 w-full">
-              <TeamAvatar name={member.name} className="h-full w-full" />
+              <TeamAvatar name={member.name} photoUrl={member.photo_url} className="h-full w-full" />
               <div className="absolute right-2 top-2">
                 <StatusBadge status={member.status} />
               </div>

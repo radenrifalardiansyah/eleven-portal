@@ -13,6 +13,7 @@ export type TeamMemberInput = {
   bio: string;
   long_bio: string;
   email: string;
+  photo_url: string | null;
   socials: { instagram?: string; facebook?: string; twitter?: string };
   status: ContentStatus;
   sort_order: number;

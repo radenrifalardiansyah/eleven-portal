@@ -7,10 +7,11 @@ export type PublicTeamMember = {
   bio: string;
   longBio: string;
   email: string;
+  photoUrl: string | null;
   socials: { instagram?: string; facebook?: string; twitter?: string };
 };
 
-const SELECT_COLUMNS = "slug, name, position, bio, long_bio, email, socials";
+const SELECT_COLUMNS = "slug, name, position, bio, long_bio, email, photo_url, socials";
 
 type TeamMemberRow = {
   slug: string;
@@ -19,6 +20,7 @@ type TeamMemberRow = {
   bio: string;
   long_bio: string;
   email: string;
+  photo_url: string | null;
   socials: { instagram?: string; facebook?: string; twitter?: string };
 };
 
@@ -30,6 +32,7 @@ function toPublicTeamMember(row: TeamMemberRow): PublicTeamMember {
     bio: row.bio,
     longBio: row.long_bio,
     email: row.email,
+    photoUrl: row.photo_url,
     socials: row.socials ?? {},
   };
 }

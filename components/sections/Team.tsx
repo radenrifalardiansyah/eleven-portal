@@ -30,6 +30,7 @@ export default function Team({ team }: { team: PublicTeamMember[] }) {
                 >
                   <TeamAvatar
                     name={member.name}
+                    photoUrl={member.photoUrl}
                     className="aspect-[4/5] w-full transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="p-5">

@@ -97,7 +97,7 @@ export default async function TeamDetailPage({
             <div className="grid grid-cols-1 gap-14 lg:grid-cols-[1fr_1.3fr]">
               <FadeIn>
                 <div className="mx-auto w-full max-w-sm overflow-hidden border border-black/5 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)]">
-                  <TeamAvatar name={member.name} className="aspect-[4/5] w-full" />
+                  <TeamAvatar name={member.name} photoUrl={member.photoUrl} className="aspect-[4/5] w-full" />
                 </div>
               </FadeIn>
 
@@ -154,6 +154,7 @@ export default async function TeamDetailPage({
                       >
                         <TeamAvatar
                           name={item.name}
+                          photoUrl={item.photoUrl}
                           className="aspect-[4/5] w-full transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="p-5">
