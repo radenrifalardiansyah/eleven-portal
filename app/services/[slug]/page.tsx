@@ -10,8 +10,7 @@ import TiltCard from "@/components/ui/TiltCard";
 import JsonLd from "@/components/seo/JsonLd";
 import { absoluteUrl, breadcrumbJsonLd, siteConfig } from "@/lib/seo";
 import { getPublishedServices, getServiceBySlug } from "@/lib/cms/public-services";
-
-const WHATSAPP_NUMBER = "62877234999550";
+import { getSiteSettings } from "@/lib/cms/public-site-settings";
 
 export async function generateStaticParams() {
   const services = await getPublishedServices();
@@ -52,7 +51,8 @@ export default async function ServiceDetailPage({
 
   const allServices = await getPublishedServices();
   const related = allServices.filter((item) => item.slug !== service.slug).slice(0, 3);
-  const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  const { contact } = await getSiteSettings();
+  const whatsappHref = `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(
     `Halo, saya tertarik dengan layanan "${service.title}". Bisa minta info lebih lanjut?`
   )}`;
 

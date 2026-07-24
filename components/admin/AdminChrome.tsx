@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, LogOut, ChevronRight, ChevronDown, Globe } from "lucide-react";
+import { Menu, LogOut, ChevronDown, Globe } from "lucide-react";
 import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import ConfirmDialog from "./ConfirmDialog";
@@ -13,16 +14,23 @@ import type { NavGroup } from "@/lib/auth/nav";
 import type { CurrentProfile } from "@/lib/auth/session";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import type { NavItem } from "@/lib/auth/nav";
+import type { SiteBranding, SiteCompany } from "@/lib/cms/public-site-settings";
 
 export default function AdminChrome({
   profile,
   navGroups,
+  branding,
+  company,
   children,
 }: {
   profile: CurrentProfile;
   navGroups: NavGroup[];
+  branding: SiteBranding;
+  company: SiteCompany;
   children: React.ReactNode;
 }) {
+  const adminLogoUrl = branding.adminLogoUrl || branding.logoUrl;
+  const brandName = company.brandName || "Eleven Digital";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -34,7 +42,7 @@ export default function AdminChrome({
     const initial = new Set<string>();
     for (const group of navGroups) {
       for (const item of group.items) {
-        if (item.parentId && (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))) {
+        if (item.parentId && item.href && (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))) {
           initial.add(item.parentId);
         }
       }
@@ -71,16 +79,24 @@ export default function AdminChrome({
   const flatItems = navGroups.flatMap((g) => g.items);
   const currentLabel = flatItems.find((n) => n.href === pathname)?.label ?? "Dashboard";
   const initial = (profile.fullName ?? profile.email ?? "?").charAt(0).toUpperCase();
-  const bottomNavItems = flatItems.filter((item) => item.showBottomNav).slice(0, 4);
+  const bottomNavItems = flatItems
+    .filter((item): item is NavItem & { href: string } => item.showBottomNav && Boolean(item.href))
+    .slice(0, 4);
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-6 py-6">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-lg shadow-brand-blue/30">
-          11
-        </div>
+        {adminLogoUrl ? (
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl">
+            <Image src={adminLogoUrl} alt={brandName} fill className="object-cover" unoptimized />
+          </div>
+        ) : (
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-lg shadow-brand-blue/30">
+            11
+          </div>
+        )}
         <div>
-          <p className="font-heading text-sm font-semibold text-ink-900">Eleven Digital</p>
+          <p className="font-heading text-sm font-semibold text-ink-900">{brandName}</p>
           <p className="text-xs text-ink-500">Content Studio</p>
         </div>
       </div>
@@ -114,21 +130,31 @@ export default function AdminChrome({
                           const children = group.items.filter((child) => child.parentId === item.id);
                           const hasChildren = children.length > 0;
                           const submenuOpen = openSubmenus.has(item.id);
+                          const active = Boolean(
+                            item.href &&
+                              (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))
+                          );
                           return (
                             <div key={item.id}>
-                              <div className="flex items-center gap-1">
+                              <div
+                                className={`flex items-center gap-1 rounded-xl ${active ? "bg-brand-blue/10 text-brand-blue" : ""}`}
+                              >
                                 <NavLink
                                   item={item}
                                   pathname={pathname}
                                   onNavigate={() => setMobileOpen(false)}
                                   className="flex-1"
+                                  plain={hasChildren}
+                                  onToggle={hasChildren ? () => toggleSubmenu(item.id) : undefined}
                                 />
                                 {hasChildren && (
                                   <button
                                     type="button"
                                     onClick={() => toggleSubmenu(item.id)}
                                     aria-label={submenuOpen ? "Tutup submenu" : "Buka submenu"}
-                                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-400 hover:bg-ink-900/5 hover:text-ink-700"
+                                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                                      active ? "text-brand-blue" : "text-ink-400 hover:bg-ink-900/5 hover:text-ink-700"
+                                    }`}
                                   >
                                     <ChevronDown
                                       className={`h-4 w-4 transition-transform ${submenuOpen ? "" : "-rotate-90"}`}
@@ -174,8 +200,18 @@ export default function AdminChrome({
 
       <div className="border-t border-ink-900/5 p-4">
         <div className="flex items-center gap-3 rounded-xl bg-ink-900/[0.03] p-3">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-blue-light text-sm font-semibold text-white">
-            {initial}
+          <div className="relative h-9 w-9 shrink-0">
+            <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-brand-blue-light text-sm font-semibold text-white">
+              {profile.avatarUrl ? (
+                <Image src={profile.avatarUrl} alt="" width={36} height={36} className="h-full w-full object-cover" unoptimized />
+              ) : (
+                initial
+              )}
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+            </span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-ink-900">
@@ -256,8 +292,12 @@ export default function AdminChrome({
               Website
             </Link>
 
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-brand-blue-light text-xs font-semibold text-white">
-              {initial}
+            <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-blue-light text-xs font-semibold text-white">
+              {profile.avatarUrl ? (
+                <Image src={profile.avatarUrl} alt="" width={32} height={32} className="h-full w-full object-cover" unoptimized />
+              ) : (
+                initial
+              )}
             </div>
           </div>
           <div className="h-[3px] w-full bg-gradient-to-r from-brand-blue via-brand-blue-light to-brand-yellow" />
@@ -300,25 +340,53 @@ function NavLink({
   pathname,
   onNavigate,
   className = "",
+  plain = false,
+  onToggle,
 }: {
   item: NavItem;
   pathname: string | null;
   onNavigate: () => void;
   className?: string;
+  /** Skip this link's own active background/text color — used when a sibling
+   *  submenu toggle button shares one pill background supplied by the parent. */
+  plain?: boolean;
+  /** Item has no href (pure category, e.g. no own page — like the account
+   *  dropdown in the navbar) — clicking the label toggles its submenu
+   *  instead of navigating. */
+  onToggle?: () => void;
 }) {
   const Icon = ICON_MAP[item.icon];
-  const active = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
+  const active = Boolean(
+    item.href && (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))
+  );
+  const classes = `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+    plain
+      ? active
+        ? "text-brand-blue"
+        : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
+      : active
+        ? "bg-brand-blue/10 text-brand-blue"
+        : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
+  } ${className}`;
+
+  if (!item.href) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={!onToggle}
+        className={`${classes} ${onToggle ? "" : "cursor-default opacity-60"}`}
+      >
+        {Icon && <Icon className="h-[18px] w-[18px]" />}
+        <span className="flex-1 text-left">{item.label}</span>
+      </button>
+    );
+  }
+
   return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-        active ? "bg-brand-blue/10 text-brand-blue" : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
-      } ${className}`}
-    >
+    <Link href={item.href} onClick={onNavigate} className={classes}>
       {Icon && <Icon className="h-[18px] w-[18px]" />}
       <span className="flex-1">{item.label}</span>
-      {active && <ChevronRight className="h-4 w-4" />}
     </Link>
   );
 }

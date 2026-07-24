@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, ChevronDown, Check } from "lucide-react";
+import { Search, ChevronDown, Check, CornerDownRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type SelectOption = {
   value: string;
   label: string;
   icon?: LucideIcon;
+  /** Non-clickable row — used for tree group headers / context-only entries. */
+  disabled?: boolean;
+  /** Indentation level for tree-style option lists (0 = no indent). */
+  indent?: number;
 };
 
 export default function SearchableSelect({
@@ -77,19 +81,34 @@ export default function SearchableSelect({
             {filtered.map((opt) => {
               const isSelected = opt.value === value;
               const Icon = opt.icon;
+              const isChild = (opt.indent ?? 0) >= 2;
+              if (opt.disabled) {
+                return (
+                  <div
+                    key={opt.value}
+                    style={{ paddingLeft: `${0.75 + (opt.indent ?? 0) * 1}rem` }}
+                    className="flex w-full cursor-default items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-ink-400"
+                  >
+                    {isChild && <CornerDownRight className="h-3.5 w-3.5 shrink-0 normal-case text-ink-900/30" />}
+                    <span className="flex-1 truncate">{opt.label}</span>
+                  </div>
+                );
+              }
               return (
                 <button
                   key={opt.value}
                   type="button"
+                  style={{ paddingLeft: `${0.75 + (opt.indent ?? 0) * 1}rem` }}
                   onClick={() => {
                     onChange(opt.value);
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-brand-blue/5 ${
+                  className={`flex w-full items-center gap-2 rounded-lg py-2 pr-3 text-left text-sm hover:bg-brand-blue/5 ${
                     isSelected ? "bg-brand-blue/10 text-brand-blue" : "text-ink-700"
                   }`}
                 >
+                  {isChild && <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-ink-900/30" />}
                   {Icon && <Icon className="h-4 w-4 shrink-0" />}
                   <span className="flex-1 truncate">{opt.label}</span>
                   {isSelected && <Check className="h-4 w-4 shrink-0" />}

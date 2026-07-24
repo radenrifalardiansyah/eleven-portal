@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { recordLogin } from "@/app/admin/(auth)/login/actions";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function LoginForm() {
       setLoading(false);
       return;
     }
+
+    recordLogin().catch(() => {});
 
     const next = searchParams.get("next") ?? "/admin";
     router.push(next);

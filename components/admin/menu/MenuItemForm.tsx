@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,37 +10,86 @@ import { createMenuItem, updateMenuItem, type MenuItemInput } from "@/app/admin/
 import IconPicker from "@/components/admin/IconPicker";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import type { MenuGroupRow, MenuItemRow } from "@/lib/cms/menu";
-import type { ModuleRow } from "@/lib/cms/modules";
 
-const schema = z.object({
-  label: z.string().min(1, "Label wajib diisi"),
-  href: z.string().min(1, "Href wajib diisi").refine((v) => v.startsWith("/") || v.startsWith("http"), {
-    message: "Href harus path (/admin/...) atau URL eksternal (https://...)",
-  }),
-  icon: z.string().min(1),
-  group_id: z.string().min(1, "Modul wajib dipilih"),
-  parent_id: z.string(),
-  module_key: z.string().min(1, "Kunci hak akses wajib dipilih"),
-  always_visible: z.boolean(),
-  show_bottom_nav: z.boolean(),
-});
+const schema = z
+  .object({
+    label: z.string().min(1, "Label wajib diisi"),
+    // Optional for top-level items so a menu can be a pure category — a
+    // dropdown that only expands its children (like the account menu in the
+    // navbar) instead of linking anywhere. Sub-menus (parent_id set) always
+    // need a real destination, enforced below since a child without an href
+    // would be a dead end.
+    href: z.string(),
+    icon: z.string().min(1),
+    group_id: z.string().min(1, "Modul wajib dipilih"),
+    parent_id: z.string(),
+    always_visible: z.boolean(),
+    show_bottom_nav: z.boolean(),
+    show_on_portal: z.boolean(),
+    portal_href: z.string(),
+    portal_match_path: z.string(),
+    portal_label: z.string(),
+    portal_sort_order: z.number().int(),
+  })
+  .superRefine((values, ctx) => {
+    const href = values.href.trim();
+    if (!href) {
+      if (values.parent_id) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["href"], message: "Href wajib diisi untuk sub-menu" });
+      }
+      if (values.show_bottom_nav) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["show_bottom_nav"],
+          message: "Menu tanpa href tidak bisa ditampilkan di Bottom Nav",
+        });
+      }
+      return;
+    }
+    if (!(href.startsWith("/") || href.startsWith("http"))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["href"],
+        message: "Href harus path (/admin/...) atau URL eksternal (https://...)",
+      });
+    }
+  })
+  .superRefine((values, ctx) => {
+    if (values.show_on_portal && !values.portal_href.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["portal_href"],
+        message: "Portal Href wajib diisi jika Tampil di Portal aktif",
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
+
+function slugifyModuleKey(href: string) {
+  const slug = href
+    .replace(/^\/admin\/?/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || "menu";
+}
 
 export default function MenuItemForm({
   itemId,
   defaultValues,
+  existingModuleKey,
   groups,
   parentOptions,
-  modules,
   onSuccess,
   onCancel,
 }: {
   itemId?: string;
   defaultValues?: Partial<FormValues>;
+  /** module_key already assigned to this item — read-only, shown for context only. */
+  existingModuleKey?: string;
   groups: MenuGroupRow[];
   parentOptions: MenuItemRow[];
-  modules: ModuleRow[];
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
@@ -50,6 +99,8 @@ export default function MenuItemForm({
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -59,19 +110,73 @@ export default function MenuItemForm({
       icon: "FileText",
       group_id: groups[0]?.id ?? "",
       parent_id: "",
-      module_key: modules[0]?.key ?? "",
       always_visible: false,
       show_bottom_nav: false,
+      show_on_portal: false,
+      portal_href: "",
+      portal_match_path: "",
+      portal_label: "",
+      portal_sort_order: 0,
       ...defaultValues,
     },
   });
+
+  const selectedGroupId = watch("group_id");
+  const hrefValue = watch("href");
+  const labelValue = watch("label");
+  const parentIdValue = watch("parent_id");
+  const showOnPortalValue = watch("show_on_portal");
+
+  // Full tree across every Modul: group header, then its top-level menus,
+  // then their existing children (greyed out — see below for why they can't
+  // be picked). Shows the whole structure so it's clear where everything sits,
+  // not just what's inside the currently selected Modul.
+  const parentTreeOptions = useMemo(() => {
+    const options: { value: string; label: string; disabled?: boolean; indent?: number }[] = [
+      { value: "", label: "— Tidak ada (menu utama) —" },
+    ];
+    for (const group of groups) {
+      const topLevel = parentOptions
+        .filter((p) => p.group_id === group.id && !p.parent_id && p.id !== itemId)
+        .sort((a, b) => a.sort_order - b.sort_order);
+      if (topLevel.length === 0) continue;
+      options.push({ value: `__group_${group.id}`, label: group.label, disabled: true });
+      for (const parent of topLevel) {
+        options.push({ value: parent.id, label: parent.label, indent: 1 });
+        // The sidebar only renders 2 levels (top-level item + its direct
+        // children — see AdminChrome) and only within the same Modul, so a
+        // child-of-a-child, or a parent from a different Modul, would just
+        // silently never show up. Listed here for context only, not selectable.
+        const children = parentOptions
+          .filter((c) => c.parent_id === parent.id && c.id !== itemId)
+          .sort((a, b) => a.sort_order - b.sort_order);
+        for (const child of children) {
+          options.push({ value: child.id, label: child.label, indent: 2, disabled: true });
+        }
+      }
+    }
+    return options;
+  }, [parentOptions, groups, itemId]);
+
+  function handleParentChange(value: string, onChange: (v: string) => void) {
+    onChange(value);
+    if (!value) return;
+    // Picking a parent from another Modul must move this item into that
+    // Modul too — a parent and its child always render together, in one group.
+    const parent = parentOptions.find((p) => p.id === value);
+    if (parent && parent.group_id !== selectedGroupId) setValue("group_id", parent.group_id);
+  }
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
     try {
       const input: MenuItemInput = {
         ...values,
+        href: values.href.trim() || null,
         parent_id: values.parent_id || null,
+        portal_href: values.portal_href.trim() || null,
+        portal_match_path: values.portal_match_path.trim() || null,
+        portal_label: values.portal_label.trim() || null,
       };
       if (itemId) {
         await updateMenuItem(itemId, input);
@@ -93,7 +198,15 @@ export default function MenuItemForm({
         <Field label="Label" error={errors.label?.message}>
           <input {...register("label")} className={inputClass} placeholder="Products" />
         </Field>
-        <Field label="Href" error={errors.href?.message} hint="Path halaman admin atau URL eksternal">
+        <Field
+          label={parentIdValue ? "Href" : "Href (opsional)"}
+          error={errors.href?.message}
+          hint={
+            parentIdValue
+              ? "Path halaman admin atau URL eksternal"
+              : "Path halaman admin atau URL eksternal — kosongkan jika menu ini cuma kategori pembuka sub-menu (tanpa halaman sendiri)"
+          }
+        >
           <input {...register("href")} className={inputClass} placeholder="/admin/products" />
         </Field>
         <Field label="Modul" error={errors.group_id?.message}>
@@ -109,19 +222,19 @@ export default function MenuItemForm({
             )}
           />
         </Field>
-        <Field label="Induk (opsional)">
+        <Field
+          label="Induk (opsional)"
+          hint="Pilih menu utama sebagai induk — Modul di atas otomatis ikut menyesuaikan"
+        >
           <Controller
             name="parent_id"
             control={control}
             render={({ field }) => (
               <SearchableSelect
                 value={field.value}
-                onChange={field.onChange}
+                onChange={(value) => handleParentChange(value, field.onChange)}
                 placeholder="— Tidak ada (menu utama) —"
-                options={[
-                  { value: "", label: "— Tidak ada (menu utama) —" },
-                  ...parentOptions.filter((p) => p.id !== itemId).map((p) => ({ value: p.id, label: p.label })),
-                ]}
+                options={parentTreeOptions}
               />
             )}
           />
@@ -133,20 +246,18 @@ export default function MenuItemForm({
             render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
           />
         </Field>
-        <Field label="Kunci Hak Akses" error={errors.module_key?.message}>
-          <Controller
-            name="module_key"
-            control={control}
-            render={({ field }) => (
-              <SearchableSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={modules.map((m) => ({ value: m.key, label: m.label }))}
-              />
-            )}
-          />
-        </Field>
       </div>
+
+      <p className="text-xs text-ink-500">
+        Kunci hak akses:{" "}
+        <span className="rounded bg-ink-900/[0.04] px-1.5 py-0.5 font-mono text-ink-700">
+          {existingModuleKey ?? slugifyModuleKey(hrefValue.trim() || labelValue || "menu")}
+        </span>{" "}
+        {existingModuleKey
+          ? "(tetap, mengikuti menu ini)"
+          : `(otomatis dari ${hrefValue.trim() ? "Href" : "Label"}, tidak perlu diisi manual)`}{" "}
+        — diatur per role di Hak Akses Role.
+      </p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-3 py-2.5 text-sm text-ink-700">
@@ -158,6 +269,36 @@ export default function MenuItemForm({
           Tampilkan di Bottom Nav (mobile)
         </label>
       </div>
+
+      <label className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-3 py-2.5 text-sm text-ink-700">
+        <input type="checkbox" {...register("show_on_portal")} className="h-4 w-4 rounded border-ink-900/20" />
+        Tampil di Portal (navbar halaman publik)
+      </label>
+
+      {showOnPortalValue && (
+        <div className="grid grid-cols-1 gap-5 rounded-xl border border-ink-900/10 p-4 sm:grid-cols-2">
+          <Field
+            label="Portal Href"
+            error={errors.portal_href?.message}
+            hint="Tujuan link di navbar publik, mis. /#services atau /services"
+          >
+            <input {...register("portal_href")} className={inputClass} placeholder="/#services" />
+          </Field>
+          <Field label="Portal Match Path (opsional)" hint="Path yang membuat menu ini aktif di luar homepage">
+            <input {...register("portal_match_path")} className={inputClass} placeholder="/services" />
+          </Field>
+          <Field label="Portal Label (opsional)" hint="Kosongkan untuk pakai Label yang sama dengan sidebar admin">
+            <input {...register("portal_label")} className={inputClass} placeholder={labelValue || "Label"} />
+          </Field>
+          <Field label="Urutan di Portal" hint="Urutan tampil di navbar publik, terpisah dari urutan sidebar admin">
+            <input
+              type="number"
+              {...register("portal_sort_order", { valueAsNumber: true })}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button

@@ -8,11 +8,15 @@ export type MenuItemInput = {
   group_id: string;
   parent_id: string | null;
   label: string;
-  href: string;
+  href: string | null;
   icon: string;
-  module_key: string;
   always_visible: boolean;
   show_bottom_nav: boolean;
+  show_on_portal: boolean;
+  portal_href: string | null;
+  portal_match_path: string | null;
+  portal_label: string | null;
+  portal_sort_order: number;
 };
 
 async function nextSortOrder(groupId: string, parentId: string | null) {
@@ -23,14 +27,34 @@ async function nextSortOrder(groupId: string, parentId: string | null) {
   return (data?.[0]?.sort_order ?? -1) + 1;
 }
 
+/** Derives a module_key from the href, e.g. "/admin/invoices" -> "invoices",
+ *  "/admin/products/stock" -> "products_stock". Keeps the Kunci Hak Akses
+ *  concept out of the create-menu form — it's provisioned automatically.
+ *  Category-only items (no href — a pure dropdown, like the account menu in
+ *  the navbar) fall back to slugifying the label instead. */
+function slugifyModuleKey(input: string) {
+  const slug = input
+    .replace(/^\/admin\/?/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return slug || "menu";
+}
+
 export async function createMenuItem(input: MenuItemInput) {
   await requireModule("menu_structure", "edit");
   const supabase = await createClient();
+
+  const module_key = slugifyModuleKey(input.href?.trim() || input.label);
+  const { error: moduleError } = await supabase.rpc("upsert_module", { p_key: module_key, p_label: input.label });
+  if (moduleError) throw new Error(moduleError.message);
+
   const sort_order = await nextSortOrder(input.group_id, input.parent_id);
-  const { error } = await supabase.from("menu_items").insert({ ...input, sort_order });
+  const { error } = await supabase.from("menu_items").insert({ ...input, module_key, sort_order });
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
+  if (input.show_on_portal) revalidatePath("/", "layout");
 }
 
 export async function updateMenuItem(id: string, input: MenuItemInput) {
@@ -40,6 +64,7 @@ export async function updateMenuItem(id: string, input: MenuItemInput) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteMenuItem(id: string) {
@@ -49,6 +74,7 @@ export async function deleteMenuItem(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
+  revalidatePath("/", "layout");
 }
 
 export async function moveMenuItem(id: string, direction: "up" | "down") {

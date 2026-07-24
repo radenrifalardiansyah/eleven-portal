@@ -5,6 +5,7 @@ import AppChrome from "@/components/layout/AppChrome";
 import JsonLd from "@/components/seo/JsonLd";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import { siteConfig, absoluteUrl } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/cms/public-site-settings";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -26,7 +27,11 @@ export const viewport: Viewport = {
   themeColor: "#0053ff",
 };
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const { branding } = await getSiteSettings();
+  const faviconUrl = branding.faviconUrl || "/images/favicon.png";
+
+  return {
   metadataBase: new URL(siteConfig.url),
   title: {
     default: "Eleven Digital Indonesia - Jasa Website & Digital Agency Jakarta",
@@ -49,8 +54,8 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: "/images/favicon.png",
-    apple: "/images/favicon.png",
+    icon: faviconUrl,
+    apple: faviconUrl,
   },
   openGraph: {
     type: "website",
@@ -85,34 +90,38 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-};
+  };
+}
 
-const organizationJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: siteConfig.name,
-  url: siteConfig.url,
-  logo: absoluteUrl("/images/logo-eleven.png"),
-  image: absoluteUrl(siteConfig.ogImage),
-  description: siteConfig.description,
-  priceRange: "Rp 500.000 - Rp 9.000.000",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: siteConfig.address.streetAddress,
-    addressLocality: siteConfig.address.addressLocality,
-    addressRegion: siteConfig.address.addressRegion,
-    addressCountry: siteConfig.address.addressCountry,
-  },
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone: siteConfig.phone,
-    contactType: "customer service",
-    areaServed: "ID",
-    availableLanguage: ["Indonesian", "English"],
-  },
-};
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { contact, branding } = await getSiteSettings();
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: siteConfig.name,
+    url: siteConfig.url,
+    logo: branding.logoUrl || absoluteUrl("/images/logo-eleven.png"),
+    image: absoluteUrl(siteConfig.ogImage),
+    description: siteConfig.description,
+    priceRange: "Rp 500.000 - Rp 9.000.000",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: contact.address.streetAddress,
+      addressLocality: contact.address.addressLocality,
+      addressRegion: contact.address.addressRegion,
+      addressCountry: contact.address.addressCountry,
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: contact.phone,
+      email: contact.email || undefined,
+      contactType: "customer service",
+      areaServed: "ID",
+      availableLanguage: ["Indonesian", "English"],
+    },
+  };
+
   return (
     <html lang="id" className={`${poppins.variable} ${notoSans.variable}`}>
       <body>

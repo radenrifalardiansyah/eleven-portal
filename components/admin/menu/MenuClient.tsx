@@ -11,20 +11,17 @@ import TiltCard from "@/components/ui/TiltCard";
 import { ICON_MAP } from "@/components/admin/icon-map";
 import { deleteMenuItem, moveMenuItem } from "@/app/admin/(dashboard)/menu-struktur/actions";
 import type { MenuGroupRow, MenuItemRow } from "@/lib/cms/menu";
-import type { ModuleRow } from "@/lib/cms/modules";
 
 type FormModalState = { mode: "create" } | { mode: "edit"; item: MenuItemRow } | null;
 
 export default function MenuClient({
   groups,
   items,
-  modules,
   canEdit,
   canDelete,
 }: {
   groups: MenuGroupRow[];
   items: MenuItemRow[];
-  modules: ModuleRow[];
   canEdit: boolean;
   canDelete: boolean;
 }) {
@@ -39,7 +36,7 @@ export default function MenuClient({
   function matchesSearch(item: MenuItemRow) {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    return item.label.toLowerCase().includes(q) || item.href.toLowerCase().includes(q);
+    return item.label.toLowerCase().includes(q) || (item.href?.toLowerCase().includes(q) ?? false);
   }
 
   // Sort order is scoped per level (top-level items count separately from each
@@ -180,7 +177,9 @@ export default function MenuClient({
                         {item.label}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-ink-500">{item.href}</td>
+                    <td className="px-4 py-3 text-ink-500">
+                      {item.href ?? <span className="italic text-ink-900/30">kategori, tanpa href</span>}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <span className="text-ink-500">#{position + 1}</span>
@@ -214,6 +213,11 @@ export default function MenuClient({
                         {item.show_bottom_nav && (
                           <span className="rounded-full bg-ink-900/10 px-2 py-0.5 text-xs font-medium text-ink-700">
                             Bottom Nav
+                          </span>
+                        )}
+                        {item.show_on_portal && (
+                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                            Tampil di Portal
                           </span>
                         )}
                       </div>
@@ -289,7 +293,9 @@ export default function MenuClient({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-heading text-sm font-semibold text-ink-900">{item.label}</p>
-                      <p className="truncate text-xs text-ink-500">{item.href}</p>
+                      <p className="truncate text-xs text-ink-500">
+                        {item.href ?? <span className="italic text-ink-900/30">kategori, tanpa href</span>}
+                      </p>
                     </div>
                     {canEdit && (
                       <div className="flex flex-col">
@@ -382,12 +388,19 @@ export default function MenuClient({
             itemId={formModal.mode === "edit" ? formModal.item.id : undefined}
             defaultValues={
               formModal.mode === "edit"
-                ? { ...formModal.item, parent_id: formModal.item.parent_id ?? "" }
+                ? {
+                    ...formModal.item,
+                    href: formModal.item.href ?? "",
+                    parent_id: formModal.item.parent_id ?? "",
+                    portal_href: formModal.item.portal_href ?? "",
+                    portal_match_path: formModal.item.portal_match_path ?? "",
+                    portal_label: formModal.item.portal_label ?? "",
+                  }
                 : undefined
             }
+            existingModuleKey={formModal.mode === "edit" ? formModal.item.module_key : undefined}
             groups={groups}
             parentOptions={items}
-            modules={modules}
             onSuccess={handleFormSuccess}
             onCancel={() => setFormModal(null)}
           />

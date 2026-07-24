@@ -8,12 +8,17 @@ export type MenuItemRow = {
   group_id: string;
   parent_id: string | null;
   label: string;
-  href: string;
+  href: string | null;
   icon: string;
   module_key: string;
   sort_order: number;
   always_visible: boolean;
   show_bottom_nav: boolean;
+  show_on_portal: boolean;
+  portal_href: string | null;
+  portal_match_path: string | null;
+  portal_label: string | null;
+  portal_sort_order: number;
 };
 
 export async function getAllMenuGroups(): Promise<MenuGroupRow[]> {
@@ -47,7 +52,7 @@ export async function getMenuForRole(permissions: PermissionMap): Promise<NavGro
           module: item.module_key,
           icon: item.icon,
           parentId: item.parent_id,
-          showBottomNav: item.show_bottom_nav,
+          showBottomNav: item.show_bottom_nav && Boolean(item.href),
         })),
     }))
     .filter((group) => group.items.length > 0);

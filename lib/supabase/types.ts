@@ -29,11 +29,24 @@ export type Database = {
           id: string;
           full_name: string | null;
           avatar_url: string | null;
+          phone: string | null;
+          position: string | null;
+          bio: string | null;
+          theme_preference: string;
           role: UserRole;
           created_at: string;
           updated_at: string;
         },
-        { id: string; full_name?: string | null; avatar_url?: string | null; role?: UserRole }
+        {
+          id: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          phone?: string | null;
+          position?: string | null;
+          bio?: string | null;
+          theme_preference?: string;
+          role?: UserRole;
+        }
       >;
       products: Table<
         ContentRow & {
@@ -118,12 +131,17 @@ export type Database = {
         group_id: string;
         parent_id: string | null;
         label: string;
-        href: string;
+        href: string | null;
         icon: string;
         module_key: string;
         sort_order: number;
         always_visible: boolean;
         show_bottom_nav: boolean;
+        show_on_portal: boolean;
+        portal_href: string | null;
+        portal_match_path: string | null;
+        portal_label: string | null;
+        portal_sort_order: number;
         created_at: string;
         updated_at: string;
       }>;
@@ -162,11 +180,24 @@ export type Database = {
         created_at: string;
         updated_at: string;
       }>;
+      login_history: Table<
+        {
+          id: string;
+          user_id: string;
+          user_agent: string | null;
+          created_at: string;
+        },
+        { user_id: string; user_agent?: string | null }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
       add_role_enum_value: {
         Args: { p_key: string };
+        Returns: void;
+      };
+      upsert_module: {
+        Args: { p_key: string; p_label: string };
         Returns: void;
       };
     };

@@ -1,7 +1,7 @@
 export type NavItem = {
   id: string;
   label: string;
-  href: string;
+  href: string | null;
   module: string;
   icon: string;
   parentId: string | null;
