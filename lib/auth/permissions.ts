@@ -1,16 +1,7 @@
-import type { UserRole } from "@/lib/supabase/types";
-
 export type Action = "view" | "edit" | "delete" | "approve" | "publish";
 
-export const ALL_ROLES: UserRole[] = ["super_admin", "admin", "editor", "employee", "finance"];
-
-export const ROLE_LABELS: Record<UserRole, string> = {
-  super_admin: "Super Admin",
-  admin: "Admin",
-  editor: "Editor",
-  employee: "Employee",
-  finance: "Finance",
-};
+// The role list + display labels used to be hardcoded here. They're now master
+// data — see lib/cms/roles.ts (getAllRoles/getActiveRoles) and the `roles` table.
 
 export type ModulePermission = {
   view: boolean;

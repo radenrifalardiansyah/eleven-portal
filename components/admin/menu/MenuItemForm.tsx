@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { createMenuItem, updateMenuItem, type MenuItemInput } from "@/app/admin/(dashboard)/menu-struktur/actions";
-import { ICON_MAP } from "@/components/admin/icon-map";
+import IconPicker from "@/components/admin/IconPicker";
+import SearchableSelect from "@/components/admin/SearchableSelect";
 import type { MenuGroupRow, MenuItemRow } from "@/lib/cms/menu";
+import type { ModuleRow } from "@/lib/cms/modules";
 
 const schema = z.object({
   label: z.string().min(1, "Label wajib diisi"),
@@ -16,9 +18,9 @@ const schema = z.object({
     message: "Href harus path (/admin/...) atau URL eksternal (https://...)",
   }),
   icon: z.string().min(1),
-  group_id: z.string().min(1, "Grup wajib dipilih"),
+  group_id: z.string().min(1, "Modul wajib dipilih"),
   parent_id: z.string(),
-  module_key: z.string().min(1, "Module key wajib diisi (mis. products, services)"),
+  module_key: z.string().min(1, "Kunci hak akses wajib dipilih"),
   always_visible: z.boolean(),
   show_bottom_nav: z.boolean(),
 });
@@ -30,6 +32,7 @@ export default function MenuItemForm({
   defaultValues,
   groups,
   parentOptions,
+  modules,
   onSuccess,
   onCancel,
 }: {
@@ -37,6 +40,7 @@ export default function MenuItemForm({
   defaultValues?: Partial<FormValues>;
   groups: MenuGroupRow[];
   parentOptions: MenuItemRow[];
+  modules: ModuleRow[];
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
@@ -45,6 +49,7 @@ export default function MenuItemForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -54,7 +59,7 @@ export default function MenuItemForm({
       icon: "FileText",
       group_id: groups[0]?.id ?? "",
       parent_id: "",
-      module_key: "",
+      module_key: modules[0]?.key ?? "",
       always_visible: false,
       show_bottom_nav: false,
       ...defaultValues,
@@ -91,42 +96,55 @@ export default function MenuItemForm({
         <Field label="Href" error={errors.href?.message} hint="Path halaman admin atau URL eksternal">
           <input {...register("href")} className={inputClass} placeholder="/admin/products" />
         </Field>
-        <Field label="Grup" error={errors.group_id?.message}>
-          <select {...register("group_id")} className={inputClass}>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </select>
+        <Field label="Modul" error={errors.group_id?.message}>
+          <Controller
+            name="group_id"
+            control={control}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={groups.map((g) => ({ value: g.id, label: g.label }))}
+              />
+            )}
+          />
         </Field>
         <Field label="Induk (opsional)">
-          <select {...register("parent_id")} className={inputClass}>
-            <option value="">— Tidak ada (menu utama) —</option>
-            {parentOptions
-              .filter((p) => p.id !== itemId)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-          </select>
+          <Controller
+            name="parent_id"
+            control={control}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="— Tidak ada (menu utama) —"
+                options={[
+                  { value: "", label: "— Tidak ada (menu utama) —" },
+                  ...parentOptions.filter((p) => p.id !== itemId).map((p) => ({ value: p.id, label: p.label })),
+                ]}
+              />
+            )}
+          />
         </Field>
         <Field label="Ikon" error={errors.icon?.message}>
-          <select {...register("icon")} className={inputClass}>
-            {Object.keys(ICON_MAP).map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="icon"
+            control={control}
+            render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
+          />
         </Field>
-        <Field
-          label="Module Key"
-          error={errors.module_key?.message}
-          hint="Kosongkan jika hanya link informasi tanpa hak akses spesifik"
-        >
-          <input {...register("module_key")} className={inputClass} placeholder="products" />
+        <Field label="Kunci Hak Akses" error={errors.module_key?.message}>
+          <Controller
+            name="module_key"
+            control={control}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={modules.map((m) => ({ value: m.key, label: m.label }))}
+              />
+            )}
+          />
         </Field>
       </div>
 

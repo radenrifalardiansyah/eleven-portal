@@ -10,6 +10,7 @@ export type CurrentProfile = {
   fullName: string | null;
   avatarUrl: string | null;
   role: UserRole;
+  roleLabel: string;
   permissions: PermissionMap;
 };
 
@@ -34,10 +35,13 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
 
   if (!profile) return null;
 
-  const { data: permissionRows } = await supabase
-    .from("role_permissions")
-    .select("module_key, can_view, can_edit, can_delete, can_approve, can_publish")
-    .eq("role", profile.role);
+  const [{ data: permissionRows }, { data: roleRow }] = await Promise.all([
+    supabase
+      .from("role_permissions")
+      .select("module_key, can_view, can_edit, can_delete, can_approve, can_publish")
+      .eq("role", profile.role),
+    supabase.from("roles").select("label").eq("key", profile.role).single(),
+  ]);
 
   const permissions: PermissionMap = {};
   for (const row of permissionRows ?? []) {
@@ -57,6 +61,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     fullName: profile.full_name,
     avatarUrl: profile.avatar_url,
     role: profile.role,
+    roleLabel: roleRow?.label ?? profile.role,
     permissions,
   };
 });

@@ -6,7 +6,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <ProfileForm email={profile.email ?? ""} role={profile.role} initialFullName={profile.fullName ?? ""} />
+      <ProfileForm email={profile.email ?? ""} roleLabel={profile.roleLabel} initialFullName={profile.fullName ?? ""} />
     </div>
   );
 }

@@ -8,7 +8,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import StatusOptions from "@/components/admin/StatusOptions";
+import SearchableSelect from "@/components/admin/SearchableSelect";
+import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createStory, updateStory, type StoryInput } from "@/app/admin/(dashboard)/stories/actions";
 
 const schema = z.object({
@@ -106,10 +107,20 @@ export default function StoryForm({
           <input {...register("label")} className={inputClass} placeholder="Creative / Technology" />
         </Field>
         <Field label="Warna Label" error={errors.label_color?.message}>
-          <select {...register("label_color")} className={inputClass}>
-            <option value="blue">Blue</option>
-            <option value="yellow">Yellow</option>
-          </select>
+          <Controller
+            control={control}
+            name="label_color"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { value: "blue", label: "Blue" },
+                  { value: "yellow", label: "Yellow" },
+                ]}
+              />
+            )}
+          />
         </Field>
         <Field label="Penulis" error={errors.author?.message}>
           <input {...register("author")} className={inputClass} />
@@ -175,9 +186,17 @@ export default function StoryForm({
           <input type="number" {...register("sort_order", { valueAsNumber: true })} className={inputClass} />
         </Field>
         <Field label="Status">
-          <select {...register("status")} className={inputClass}>
-            <StatusOptions canPublish={canPublish} />
-          </select>
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={getStatusOptions(canPublish)}
+              />
+            )}
+          />
         </Field>
       </div>
 

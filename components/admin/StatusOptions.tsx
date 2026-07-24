@@ -1,9 +1,9 @@
-export default function StatusOptions({ canPublish }: { canPublish: boolean }) {
-  return (
-    <>
-      <option value="draft">Draft</option>
-      <option value="pending">Ajukan Review</option>
-      {canPublish && <option value="published">Published</option>}
-    </>
-  );
+import type { SelectOption } from "@/components/admin/SearchableSelect";
+
+export function getStatusOptions(canPublish: boolean): SelectOption[] {
+  return [
+    { value: "draft", label: "Draft" },
+    { value: "pending", label: "Ajukan Review" },
+    ...(canPublish ? [{ value: "published", label: "Published" }] : []),
+  ];
 }

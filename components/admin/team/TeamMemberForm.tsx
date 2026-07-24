@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import StatusOptions from "@/components/admin/StatusOptions";
+import SearchableSelect from "@/components/admin/SearchableSelect";
+import { getStatusOptions } from "@/components/admin/StatusOptions";
 import {
   createTeamMember,
   updateTeamMember,
@@ -54,6 +55,7 @@ export default function TeamMemberForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -152,9 +154,17 @@ export default function TeamMemberForm({
           <input type="number" {...register("sort_order", { valueAsNumber: true })} className={inputClass} />
         </Field>
         <Field label="Status">
-          <select {...register("status")} className={inputClass}>
-            <StatusOptions canPublish={canPublish} />
-          </select>
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={getStatusOptions(canPublish)}
+              />
+            )}
+          />
         </Field>
       </div>
 

@@ -9,7 +9,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import TagInput from "@/components/admin/TagInput";
 import { ImageUploader, GalleryUploader } from "@/components/admin/ImageUploader";
-import StatusOptions from "@/components/admin/StatusOptions";
+import SearchableSelect from "@/components/admin/SearchableSelect";
+import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createProduct, updateProduct, type ProductInput } from "@/app/admin/(dashboard)/products/actions";
 
 const schema = z.object({
@@ -152,9 +153,17 @@ export default function ProductForm({
           <input type="number" {...register("sort_order", { valueAsNumber: true })} className={inputClass} />
         </Field>
         <Field label="Status">
-          <select {...register("status")} className={inputClass}>
-            <StatusOptions canPublish={canPublish} />
-          </select>
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={getStatusOptions(canPublish)}
+              />
+            )}
+          />
         </Field>
       </div>
 

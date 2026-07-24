@@ -1,32 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { inviteUser } from "@/app/admin/(dashboard)/users/actions";
-import { ROLE_LABELS } from "@/lib/auth/permissions";
+import SearchableSelect from "@/components/admin/SearchableSelect";
+import { ICON_MAP } from "@/components/admin/icon-map";
+import type { RoleRow } from "@/lib/cms/roles";
 import type { UserRole } from "@/lib/supabase/types";
 
 const schema = z.object({
   email: z.string().email("Format email tidak valid"),
   fullName: z.string().min(1, "Nama wajib diisi"),
-  role: z.enum(["super_admin", "admin", "editor", "employee", "finance"]),
+  role: z.string().min(1, "Role wajib dipilih"),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-export default function InviteUserForm({ onSuccess }: { onSuccess?: () => void }) {
+export default function InviteUserForm({ roles, onSuccess }: { roles: RoleRow[]; onSuccess?: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "", fullName: "", role: "employee" },
+    defaultValues: { email: "", fullName: "", role: roles.find((r) => r.key === "employee")?.key ?? roles[0]?.key ?? "" },
   });
 
   async function onSubmit(values: FormValues) {
@@ -53,13 +56,17 @@ export default function InviteUserForm({ onSuccess }: { onSuccess?: () => void }
       </Field>
 
       <Field label="Role" error={errors.role?.message}>
-        <select {...register("role")} className={inputClass}>
-          {(Object.keys(ROLE_LABELS) as UserRole[]).map((role) => (
-            <option key={role} value={role}>
-              {ROLE_LABELS[role]}
-            </option>
-          ))}
-        </select>
+        <Controller
+          name="role"
+          control={control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onChange={field.onChange}
+              options={roles.map((role) => ({ value: role.key, label: role.label, icon: ICON_MAP[role.icon] }))}
+            />
+          )}
+        />
       </Field>
 
       <p className="text-xs text-ink-500">

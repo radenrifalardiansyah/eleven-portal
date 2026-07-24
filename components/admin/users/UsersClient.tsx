@@ -8,25 +8,30 @@ import type { ColumnDef } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import Modal from "@/components/admin/Modal";
+import SearchableSelect from "@/components/admin/SearchableSelect";
+import { ICON_MAP } from "@/components/admin/icon-map";
 import InviteUserForm from "@/components/admin/users/InviteUserForm";
 import { updateUserRole, deleteUserAccount } from "@/app/admin/(dashboard)/users/actions";
-import { ROLE_LABELS } from "@/lib/auth/permissions";
 import type { AdminUser } from "@/lib/cms/users";
+import type { RoleRow } from "@/lib/cms/roles";
 import type { UserRole } from "@/lib/supabase/types";
 
 export default function UsersClient({
   users,
+  roles,
   currentUserId,
   canCreate,
   canEdit,
   canDelete,
 }: {
   users: AdminUser[];
+  roles: RoleRow[];
   currentUserId: string;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
 }) {
+  const roleLabelByKey = new Map(roles.map((r) => [r.key, r.label]));
   const router = useRouter();
   const [pendingDelete, setPendingDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -98,23 +103,19 @@ export default function UsersClient({
           if (!canEdit || isSelf) {
             return (
               <span className="inline-block rounded-lg bg-brand-blue/10 px-2.5 py-1 text-xs font-medium text-brand-blue">
-                {ROLE_LABELS[row.original.role]}
+                {roleLabelByKey.get(row.original.role) ?? row.original.role}
               </span>
             );
           }
           return (
-            <select
-              value={row.original.role}
-              disabled={updatingRoleId === row.original.id}
-              onChange={(e) => handleRoleChange(row.original.id, e.target.value as UserRole)}
-              className="rounded-lg border border-ink-900/10 bg-white px-2 py-1.5 text-xs text-ink-900 outline-none focus:border-brand-blue"
-            >
-              {(Object.keys(ROLE_LABELS) as UserRole[]).map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
+            <div className="w-40">
+              <SearchableSelect
+                value={row.original.role}
+                onChange={(value) => handleRoleChange(row.original.id, value as UserRole)}
+                disabled={updatingRoleId === row.original.id}
+                options={roles.map((role) => ({ value: role.key, label: role.label, icon: ICON_MAP[role.icon] }))}
+              />
+            </div>
           );
         },
       },
@@ -144,7 +145,7 @@ export default function UsersClient({
         },
       },
     ],
-    [canEdit, canDelete, currentUserId, updatingRoleId]
+    [canEdit, canDelete, currentUserId, updatingRoleId, roles, roleLabelByKey]
   );
 
   return (
@@ -167,7 +168,7 @@ export default function UsersClient({
             </div>
             <div className="mt-3 flex items-center justify-between">
               <span className="inline-block rounded-lg bg-brand-blue/10 px-2.5 py-1 text-xs font-medium text-brand-blue">
-                {ROLE_LABELS[user.role]}
+                {roleLabelByKey.get(user.role) ?? user.role}
               </span>
               {canDelete && user.id !== currentUserId && (
                 <button
@@ -195,6 +196,7 @@ export default function UsersClient({
 
       <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Undang Pengguna" description="Kirim undangan email untuk akun baru.">
         <InviteUserForm
+          roles={roles}
           onSuccess={() => {
             setInviteOpen(false);
             router.refresh();

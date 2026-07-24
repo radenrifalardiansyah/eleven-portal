@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, LogOut, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import ConfirmDialog from "./ConfirmDialog";
 import { ICON_MAP } from "./icon-map";
 import type { NavGroup } from "@/lib/auth/nav";
 import type { CurrentProfile } from "@/lib/auth/session";
-import { ROLE_LABELS } from "@/lib/auth/permissions";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import type { NavItem } from "@/lib/auth/nav";
 
@@ -25,8 +25,22 @@ export default function AdminChrome({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    for (const group of navGroups) {
+      for (const item of group.items) {
+        if (item.parentId && (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))) {
+          initial.add(item.parentId);
+        }
+      }
+    }
+    return initial;
+  });
 
   function toggleGroup(label: string) {
     setCollapsedGroups((prev) => {
@@ -37,7 +51,17 @@ export default function AdminChrome({
     });
   }
 
+  function toggleSubmenu(itemId: string) {
+    setOpenSubmenus((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   async function handleLogout() {
+    setLoggingOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/admin/login");
@@ -88,20 +112,53 @@ export default function AdminChrome({
                         .filter((item) => !item.parentId)
                         .map((item) => {
                           const children = group.items.filter((child) => child.parentId === item.id);
+                          const hasChildren = children.length > 0;
+                          const submenuOpen = openSubmenus.has(item.id);
                           return (
                             <div key={item.id}>
-                              <NavLink item={item} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-                              {children.length > 0 && (
-                                <div className="ml-4 space-y-1 border-l border-ink-900/5 pl-3">
-                                  {children.map((child) => (
-                                    <NavLink
-                                      key={child.id}
-                                      item={child}
-                                      pathname={pathname}
-                                      onNavigate={() => setMobileOpen(false)}
+                              <div className="flex items-center gap-1">
+                                <NavLink
+                                  item={item}
+                                  pathname={pathname}
+                                  onNavigate={() => setMobileOpen(false)}
+                                  className="flex-1"
+                                />
+                                {hasChildren && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSubmenu(item.id)}
+                                    aria-label={submenuOpen ? "Tutup submenu" : "Buka submenu"}
+                                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink-400 hover:bg-ink-900/5 hover:text-ink-700"
+                                  >
+                                    <ChevronDown
+                                      className={`h-4 w-4 transition-transform ${submenuOpen ? "" : "-rotate-90"}`}
                                     />
-                                  ))}
-                                </div>
+                                  </button>
+                                )}
+                              </div>
+                              {hasChildren && (
+                                <AnimatePresence initial={false}>
+                                  {submenuOpen && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="ml-4 space-y-1 border-l border-ink-900/5 pl-3 pt-1">
+                                        {children.map((child) => (
+                                          <NavLink
+                                            key={child.id}
+                                            item={child}
+                                            pathname={pathname}
+                                            onNavigate={() => setMobileOpen(false)}
+                                          />
+                                        ))}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               )}
                             </div>
                           );
@@ -124,10 +181,10 @@ export default function AdminChrome({
             <p className="truncate text-sm font-medium text-ink-900">
               {profile.fullName ?? profile.email}
             </p>
-            <p className="text-xs text-ink-500">{ROLE_LABELS[profile.role]}</p>
+            <p className="text-xs text-ink-500">{profile.roleLabel}</p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={() => setLogoutConfirmOpen(true)}
             aria-label="Logout"
             className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
@@ -141,6 +198,15 @@ export default function AdminChrome({
   return (
     <div className="min-h-screen bg-[#F7F8FB]">
       <Toaster richColors position="top-right" />
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title="Logout dari akun?"
+        description="Kamu perlu login kembali untuk mengakses Content Studio."
+        confirmLabel="Logout"
+        loading={loggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutConfirmOpen(false)}
+      />
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-ink-900/5 bg-white lg:block">
         {sidebarContent}
       </aside>
@@ -233,10 +299,12 @@ function NavLink({
   item,
   pathname,
   onNavigate,
+  className = "",
 }: {
   item: NavItem;
   pathname: string | null;
   onNavigate: () => void;
+  className?: string;
 }) {
   const Icon = ICON_MAP[item.icon];
   const active = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
@@ -246,7 +314,7 @@ function NavLink({
       onClick={onNavigate}
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
         active ? "bg-brand-blue/10 text-brand-blue" : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
-      }`}
+      } ${className}`}
     >
       {Icon && <Icon className="h-[18px] w-[18px]" />}
       <span className="flex-1">{item.label}</span>

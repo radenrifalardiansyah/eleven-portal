@@ -5,15 +5,14 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { updateOwnProfile } from "@/app/admin/(dashboard)/profile/actions";
-import { ROLE_LABELS } from "@/lib/auth/permissions";
 
 export default function ProfileForm({
   email,
-  role,
+  roleLabel,
   initialFullName,
 }: {
   email: string;
-  role: string;
+  roleLabel: string;
   initialFullName: string;
 }) {
   const [fullName, setFullName] = useState(initialFullName);
@@ -82,7 +81,7 @@ export default function ProfileForm({
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-ink-700">Role</label>
             <input
-              value={ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role}
+              value={roleLabel}
               disabled
               className="w-full rounded-xl border border-ink-900/10 bg-ink-900/[0.03] px-3 py-2.5 text-sm text-ink-500"
             />

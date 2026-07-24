@@ -1,4 +1,7 @@
-export type UserRole = "super_admin" | "admin" | "editor" | "employee" | "finance";
+// Roles are master data (see the `roles` table / lib/cms/roles.ts) and can grow at
+// runtime via the Role admin page, so this stays a plain string rather than a
+// literal union — the actual valid set is enforced by the Postgres `user_role` enum.
+export type UserRole = string;
 export type ContentStatus = "draft" | "pending" | "published";
 
 type ContentRow = {
@@ -142,8 +145,30 @@ export type Database = {
           can_publish: boolean;
         }>
       >;
+      modules: Table<{
+        key: string;
+        label: string;
+        sort_order: number;
+        created_at: string;
+        updated_at: string;
+      }>;
+      roles: Table<{
+        key: UserRole;
+        label: string;
+        icon: string;
+        sort_order: number;
+        is_super_admin: boolean;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      add_role_enum_value: {
+        Args: { p_key: string };
+        Returns: void;
+      };
+    };
   };
 };
