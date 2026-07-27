@@ -1,3 +1,5 @@
+import type { CurrencyCode } from "@/lib/currency";
+
 // Roles are master data (see the `roles` table / lib/cms/roles.ts) and can grow at
 // runtime via the Role admin page, so this stays a plain string rather than a
 // literal union — the actual valid set is enforced by the Postgres `user_role` enum.
@@ -51,8 +53,9 @@ export type Database = {
       products: Table<
         ContentRow & {
           name: string;
-          category: string;
-          price: string;
+          service_id: string;
+          price_amount: number;
+          price_currency: CurrencyCode;
           description: string;
           long_description: string;
           features: string[];
@@ -67,6 +70,7 @@ export type Database = {
           long_description: string;
           benefits: string[];
           icon: string;
+          gallery: string[];
         }
       >;
       stories: Table<
@@ -96,7 +100,8 @@ export type Database = {
       projects: Table<
         ContentRow & {
           title: string;
-          category: string;
+          product_id: string | null;
+          client_id: string | null;
           year: string;
           image: string;
           href: string;
@@ -109,6 +114,16 @@ export type Database = {
         ContentRow & {
           name: string;
           logo: string;
+          industry: string;
+          website: string;
+          description: string;
+          contact_name: string;
+          contact_position: string;
+          contact_email: string;
+          contact_phone: string;
+          testimonial_quote: string;
+          testimonial_author: string;
+          testimonial_rating: number | null;
         }
       >;
       page_sections: Table<{

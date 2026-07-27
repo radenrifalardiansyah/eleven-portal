@@ -46,11 +46,6 @@ export async function generateMetadata({
   };
 }
 
-function parsePrice(price: string) {
-  const digits = price.replace(/[^0-9]/g, "");
-  return digits || "0";
-}
-
 export default async function ProductDetailPage({
   params,
 }: {
@@ -78,8 +73,8 @@ export default async function ProductDetailPage({
     offers: {
       "@type": "Offer",
       url: absoluteUrl(`/products/${product.slug}`),
-      priceCurrency: "IDR",
-      price: parsePrice(product.price),
+      priceCurrency: product.priceCurrency,
+      price: product.priceAmount,
       availability: "https://schema.org/InStock",
       seller: { "@type": "Organization", name: siteConfig.name },
     },

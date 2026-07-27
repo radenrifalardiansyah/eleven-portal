@@ -139,6 +139,28 @@ export default async function ServiceDetailPage({
               </FadeIn>
             </div>
 
+            {service.gallery.length > 0 && (
+              <div className="mt-20">
+                <h2 className="mb-6 font-heading text-xl font-semibold text-ink-900">Galeri</h2>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {service.gallery.map((image) => (
+                    <div
+                      key={image}
+                      className="relative aspect-square overflow-hidden rounded-xl border border-black/5 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
+                    >
+                      <Image
+                        src={image}
+                        alt={service.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {related.length > 0 && (
               <div className="mt-24">
                 <h2 className="mb-8 font-heading text-xl font-semibold text-ink-900">

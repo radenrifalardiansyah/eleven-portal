@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { GripVertical, ImagePlus, Loader2, X } from "lucide-react";
 import { uploadMediaFile } from "@/lib/supabase/upload";
 
 export function ImageUploader({
@@ -76,6 +76,8 @@ export function GalleryUploader({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   async function handleFiles(files: FileList) {
     setLoading(true);
@@ -87,11 +89,44 @@ export function GalleryUploader({
     }
   }
 
+  function handleDrop(targetIndex: number) {
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      setOverIndex(null);
+      return;
+    }
+    const next = [...value];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    onChange(next);
+    setDragIndex(null);
+    setOverIndex(null);
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       {value.map((url, i) => (
-        <div key={url} className="relative h-20 w-20 overflow-hidden rounded-xl border border-ink-900/10 bg-ink-900/5">
+        <div
+          key={url}
+          draggable
+          onDragStart={() => setDragIndex(i)}
+          onDragEnter={() => setOverIndex(i)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={() => handleDrop(i)}
+          onDragEnd={() => {
+            setDragIndex(null);
+            setOverIndex(null);
+          }}
+          className={`group relative h-20 w-20 cursor-grab overflow-hidden rounded-xl border bg-ink-900/5 transition active:cursor-grabbing ${
+            overIndex === i && dragIndex !== null && dragIndex !== i
+              ? "border-brand-blue ring-2 ring-brand-blue/30"
+              : "border-ink-900/10"
+          } ${dragIndex === i ? "opacity-40" : ""}`}
+        >
           <Image src={url} alt="" fill className="object-cover" unoptimized />
+          <div className="absolute inset-x-0 top-0 flex justify-center bg-gradient-to-b from-ink-900/50 to-transparent py-1 opacity-0 transition group-hover:opacity-100">
+            <GripVertical className="h-3.5 w-3.5 text-white" />
+          </div>
           <button
             type="button"
             onClick={() => onChange(value.filter((_, idx) => idx !== i))}
@@ -120,6 +155,7 @@ export function GalleryUploader({
           e.target.value = "";
         }}
       />
+      {value.length > 1 && <p className="w-full text-xs text-ink-500">Geser foto untuk mengubah urutan</p>}
     </div>
   );
 }

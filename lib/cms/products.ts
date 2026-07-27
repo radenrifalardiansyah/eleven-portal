@@ -1,12 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 
-export type Product = Database["public"]["Tables"]["products"]["Row"];
+export type Product = Database["public"]["Tables"]["products"]["Row"] & { serviceTitle: string };
 
 export async function getAllProducts(): Promise<Product[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("products").select("*").order("sort_order");
+  const [{ data: products, error }, { data: services, error: serviceError }] = await Promise.all([
+    supabase.from("products").select("*").order("sort_order"),
+    supabase.from("services").select("id, title"),
+  ]);
   if (error) throw new Error(error.message);
-  return data ?? [];
-}
+  if (serviceError) throw new Error(serviceError.message);
 
+  const titleById = new Map((services ?? []).map((s) => [s.id, s.title]));
+  return (products ?? []).map((p) => ({ ...p, serviceTitle: titleById.get(p.service_id) ?? "" }));
+}

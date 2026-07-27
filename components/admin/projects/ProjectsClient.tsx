@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import Modal from "@/components/admin/Modal";
@@ -13,16 +13,27 @@ import ExcelActions from "@/components/admin/ExcelActions";
 import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
 import TiltCard from "@/components/ui/TiltCard";
-import { deleteProject, importProjects, reviewProject } from "@/app/admin/(dashboard)/projects/actions";
+import {
+  deleteProject,
+  deleteProjects,
+  importProjects,
+  moveProject,
+  reviewProject,
+  reviewProjects,
+} from "@/app/admin/(dashboard)/projects/actions";
 import ProjectForm from "@/components/admin/projects/ProjectForm";
-import { projectToExcelRow, excelRowToProjectInput } from "@/components/admin/projects/excel";
+import { projectToExcelRow, excelRowToProjectInput, downloadProjectImportTemplate } from "@/components/admin/projects/excel";
 import { exportRowsToExcel, parseExcelFile } from "@/lib/excel";
 import type { Project } from "@/lib/cms/projects";
+import type { Product } from "@/lib/cms/products";
+import type { TestimonialClient } from "@/lib/cms/testimonials";
 
 type FormModalState = { mode: "create" } | { mode: "edit"; project: Project } | null;
 
 export default function ProjectsClient({
   projects,
+  products,
+  clients,
   canCreate,
   canEdit,
   canDelete,
@@ -30,6 +41,8 @@ export default function ProjectsClient({
   canPublish,
 }: {
   projects: Project[];
+  products: Product[];
+  clients: TestimonialClient[];
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -42,6 +55,20 @@ export default function ProjectsClient({
   const [formModal, setFormModal] = useState<FormModalState>(null);
   const [importing, setImporting] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<RowSelectionState>({});
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkApproving, setBulkApproving] = useState(false);
+
+  const selectedProjects = useMemo(
+    () => projects.filter((p) => selectedIds[p.id]),
+    [projects, selectedIds]
+  );
+  const selectedPendingProjects = useMemo(
+    () => selectedProjects.filter((p) => p.status === "pending"),
+    [selectedProjects]
+  );
 
   function handleExport() {
     exportRowsToExcel(projects.map(projectToExcelRow), "case-study");
@@ -99,6 +126,50 @@ export default function ProjectsClient({
     router.refresh();
   }
 
+  async function handleMove(id: string, direction: "up" | "down") {
+    setMovingId(id);
+    try {
+      await moveProject(id, direction);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal memindahkan urutan case study");
+    } finally {
+      setMovingId(null);
+    }
+  }
+
+  async function confirmBulkDelete() {
+    setBulkDeleting(true);
+    try {
+      await deleteProjects(selectedProjects.map((p) => ({ id: p.id, slug: p.slug })));
+      toast.success(`${selectedProjects.length} case study dihapus`);
+      setSelectedIds({});
+      setBulkDeleteConfirm(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus case study terpilih");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
+  async function handleBulkApprove() {
+    setBulkApproving(true);
+    try {
+      await reviewProjects(
+        selectedPendingProjects.map((p) => ({ id: p.id, slug: p.slug })),
+        true
+      );
+      toast.success(`${selectedPendingProjects.length} case study disetujui & tayang`);
+      setSelectedIds({});
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyetujui case study terpilih");
+    } finally {
+      setBulkApproving(false);
+    }
+  }
+
   const columns = useMemo<ColumnDef<Project, unknown>[]>(
     () => [
       {
@@ -124,9 +195,17 @@ export default function ProjectsClient({
         ),
       },
       {
-        accessorKey: "category",
-        header: "Kategori",
+        accessorKey: "productName",
+        header: "Produk",
         cell: ({ getValue }) => <CategoryBadge label={getValue<string>()} />,
+      },
+      {
+        accessorKey: "clientName",
+        header: "Client",
+        cell: ({ getValue }) => {
+          const clientName = getValue<string>();
+          return clientName ? <CategoryBadge label={clientName} /> : <span className="text-ink-400">-</span>;
+        },
       },
       { accessorKey: "year", header: "Tahun" },
       {
@@ -138,48 +217,116 @@ export default function ProjectsClient({
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            {canApprove && row.original.status === "pending" && (
-              <ApprovalActions
-                disabled={reviewingId === row.original.id}
-                onApprove={() => handleReview(row.original, true)}
-                onReject={() => handleReview(row.original, false)}
-              />
-            )}
-            {canEdit && (
+        cell: ({ row }) => {
+          const position = projects.findIndex((p) => p.id === row.original.id);
+          return (
+            <div className="flex items-center gap-2">
+              {canEdit && (
+                <div className="flex items-center gap-1">
+                  <span className="text-ink-500">#{position + 1}</span>
+                  <div className="flex flex-col">
+                    <button
+                      disabled={movingId === row.original.id || position === 0}
+                      onClick={() => handleMove(row.original.id, "up")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Naikkan urutan"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      disabled={movingId === row.original.id || position === projects.length - 1}
+                      onClick={() => handleMove(row.original.id, "down")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Turunkan urutan"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              {canApprove && row.original.status === "pending" && (
+                <ApprovalActions
+                  disabled={reviewingId === row.original.id}
+                  onApprove={() => handleReview(row.original, true)}
+                  onReject={() => handleReview(row.original, false)}
+                />
+              )}
+              {canEdit && (
+                <button
+                  onClick={() => setFormModal({ mode: "edit", project: row.original })}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => setPendingDelete(row.original)}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [canEdit, canDelete, canApprove, reviewingId, movingId, projects]
+  );
+
+  const canBulkSelect = canDelete || canApprove;
+
+  return (
+    <>
+      {canBulkSelect && selectedProjects.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand-blue/20 bg-brand-blue/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-ink-900">{selectedProjects.length} case study dipilih</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {canApprove && selectedPendingProjects.length > 0 && (
               <button
-                onClick={() => setFormModal({ mode: "edit", project: row.original })}
-                className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+                onClick={handleBulkApprove}
+                disabled={bulkApproving}
+                className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
               >
-                <Pencil className="h-4 w-4" />
+                <Check className="h-3.5 w-3.5" />
+                Setujui Terpilih ({selectedPendingProjects.length})
               </button>
             )}
             {canDelete && (
               <button
-                onClick={() => setPendingDelete(row.original)}
-                className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
+                onClick={() => setBulkDeleteConfirm(true)}
+                className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
+                Hapus Terpilih
               </button>
             )}
+            <button
+              onClick={() => setSelectedIds({})}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-900/5"
+            >
+              <X className="h-3.5 w-3.5" />
+              Batal Pilih
+            </button>
           </div>
-        ),
-      },
-    ],
-    [canEdit, canDelete, canApprove, reviewingId]
-  );
+        </div>
+      )}
 
-  return (
-    <>
       <DataTable
         data={projects}
         columns={columns}
         getRowId={(row) => row.id}
         searchPlaceholder="Cari case study..."
+        selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
         actions={
           <div className="flex items-center gap-2">
-            <ExcelActions onExport={handleExport} onImport={canCreate ? handleImport : undefined} importing={importing} />
+            <ExcelActions
+              onExport={handleExport}
+              onImport={canCreate ? handleImport : undefined}
+              onDownloadTemplate={canCreate ? downloadProjectImportTemplate : undefined}
+              importing={importing}
+            />
             {canCreate && (
               <button
                 onClick={() => setFormModal({ mode: "create" })}
@@ -191,7 +338,9 @@ export default function ProjectsClient({
             )}
           </div>
         }
-        renderCard={(project) => (
+        renderCard={(project) => {
+          const position = projects.findIndex((p) => p.id === project.id);
+          return (
           <TiltCard className="group flex h-full flex-col rounded-2xl border border-ink-900/5 bg-white p-4 shadow-sm">
             <div className="relative h-36 w-full overflow-hidden rounded-xl bg-ink-900/5">
               {project.image && (
@@ -205,9 +354,10 @@ export default function ProjectsClient({
               <p className="font-heading text-sm font-semibold text-ink-900">{project.title}</p>
               <p className="text-xs text-ink-500">/{project.slug}</p>
               <div className="mt-2 flex items-center gap-2">
-                <CategoryBadge label={project.category} />
+                <CategoryBadge label={project.productName} />
                 <span className="text-xs text-ink-500">{project.year}</span>
               </div>
+              {canEdit && <p className="mt-1 text-xs text-ink-500">Urutan #{position + 1}</p>}
             </div>
             {canApprove && project.status === "pending" && (
               <div className="mt-3 flex justify-center">
@@ -219,6 +369,26 @@ export default function ProjectsClient({
               </div>
             )}
             <div className="mt-3 flex items-center gap-2">
+              {canEdit && (
+                <div className="flex flex-col">
+                  <button
+                    disabled={movingId === project.id || position === 0}
+                    onClick={() => handleMove(project.id, "up")}
+                    className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                    aria-label="Naikkan urutan"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    disabled={movingId === project.id || position === projects.length - 1}
+                    onClick={() => handleMove(project.id, "down")}
+                    className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                    aria-label="Turunkan urutan"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               {canEdit && (
                 <button
                   onClick={() => setFormModal({ mode: "edit", project })}
@@ -237,7 +407,8 @@ export default function ProjectsClient({
               )}
             </div>
           </TiltCard>
-        )}
+          );
+        }}
       />
 
       <Modal
@@ -250,7 +421,13 @@ export default function ProjectsClient({
           <ProjectForm
             key={formModal.mode === "edit" ? formModal.project.id : "create"}
             projectId={formModal.mode === "edit" ? formModal.project.id : undefined}
-            defaultValues={formModal.mode === "edit" ? formModal.project : undefined}
+            defaultValues={
+              formModal.mode === "edit"
+                ? { ...formModal.project, product_id: formModal.project.product_id ?? "", client_id: formModal.project.client_id ?? "" }
+                : undefined
+            }
+            products={products}
+            clients={clients}
             canPublish={canPublish}
             onSuccess={handleFormSuccess}
             onCancel={() => setFormModal(null)}
@@ -265,6 +442,15 @@ export default function ProjectsClient({
         loading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        title={`Hapus ${selectedProjects.length} case study terpilih?`}
+        description="Tindakan ini tidak bisa dibatalkan."
+        loading={bulkDeleting}
+        onConfirm={confirmBulkDelete}
+        onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
   );

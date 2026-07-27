@@ -7,9 +7,10 @@ export type PublicService = {
   longDescription: string;
   benefits: string[];
   icon: string;
+  gallery: string[];
 };
 
-const SELECT_COLUMNS = "slug, title, description, long_description, benefits, icon";
+const SELECT_COLUMNS = "slug, title, description, long_description, benefits, icon, gallery";
 
 type ServiceRow = {
   slug: string;
@@ -18,6 +19,7 @@ type ServiceRow = {
   long_description: string;
   benefits: string[];
   icon: string;
+  gallery: string[];
 };
 
 function toPublicService(row: ServiceRow): PublicService {
@@ -28,6 +30,7 @@ function toPublicService(row: ServiceRow): PublicService {
     longDescription: row.long_description,
     benefits: row.benefits,
     icon: row.icon,
+    gallery: row.gallery,
   };
 }
 

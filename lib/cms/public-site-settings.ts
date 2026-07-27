@@ -13,7 +13,13 @@ export type SiteContact = {
   };
 };
 
-export type SiteBranding = { logoUrl: string; adminLogoUrl: string; faviconUrl: string };
+export type SiteBranding = {
+  logoUrl: string;
+  adminLogoUrl: string;
+  faviconUrl: string;
+  adminFaviconUrl: string;
+  mobileIconUrl: string;
+};
 
 export type SiteCompany = { legalName: string; brandName: string; tagline: string };
 
@@ -36,7 +42,13 @@ export const EMPTY_CONTACT: SiteContact = {
   address: { streetAddress: "", addressLocality: "", addressRegion: "", addressCountry: "" },
 };
 
-export const EMPTY_BRANDING: SiteBranding = { logoUrl: "", adminLogoUrl: "", faviconUrl: "" };
+export const EMPTY_BRANDING: SiteBranding = {
+  logoUrl: "",
+  adminLogoUrl: "",
+  faviconUrl: "",
+  adminFaviconUrl: "",
+  mobileIconUrl: "",
+};
 
 export const EMPTY_COMPANY: SiteCompany = { legalName: "", brandName: "", tagline: "" };
 

@@ -12,12 +12,12 @@ export type PublicProject = {
   services: string[];
 };
 
-const SELECT_COLUMNS = "slug, title, category, year, image, href, description, long_description, services";
+const SELECT_COLUMNS = "slug, title, product_id, year, image, href, description, long_description, services";
 
 type ProjectRow = {
   slug: string;
   title: string;
-  category: string;
+  product_id: string | null;
   year: string;
   image: string;
   href: string;
@@ -26,11 +26,11 @@ type ProjectRow = {
   services: string[];
 };
 
-function toPublicProject(row: ProjectRow): PublicProject {
+function toPublicProject(row: ProjectRow, productName: string): PublicProject {
   return {
     slug: row.slug,
     title: row.title,
-    category: row.category,
+    category: productName,
     year: row.year,
     image: row.image,
     href: row.href,
@@ -42,13 +42,15 @@ function toPublicProject(row: ProjectRow): PublicProject {
 
 export async function getPublishedProjects(): Promise<PublicProject[]> {
   const supabase = createPublicClient();
-  const { data, error } = await supabase
-    .from("projects")
-    .select(SELECT_COLUMNS)
-    .eq("status", "published")
-    .order("sort_order");
+  const [{ data, error }, { data: products, error: productError }] = await Promise.all([
+    supabase.from("projects").select(SELECT_COLUMNS).eq("status", "published").order("sort_order"),
+    supabase.from("products").select("id, name"),
+  ]);
   if (error) throw new Error(error.message);
-  return (data ?? []).map(toPublicProject);
+  if (productError) throw new Error(productError.message);
+
+  const nameById = new Map((products ?? []).map((p) => [p.id, p.name]));
+  return (data ?? []).map((row) => toPublicProject(row, (row.product_id && nameById.get(row.product_id)) ?? ""));
 }
 
 export async function getProjectBySlug(slug: string): Promise<PublicProject | null> {
@@ -59,5 +61,11 @@ export async function getProjectBySlug(slug: string): Promise<PublicProject | nu
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
-  return data ? toPublicProject(data) : null;
+  if (!data) return null;
+
+  const { data: product } = data.product_id
+    ? await supabase.from("products").select("name").eq("id", data.product_id).maybeSingle()
+    : { data: null };
+
+  return toPublicProject(data, product?.name ?? "");
 }

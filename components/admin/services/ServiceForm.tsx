@@ -8,7 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import TagInput from "@/components/admin/TagInput";
-import { ImageUploader } from "@/components/admin/ImageUploader";
+import { ImageUploader, GalleryUploader } from "@/components/admin/ImageUploader";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createService, updateService, type ServiceInput } from "@/app/admin/(dashboard)/services/actions";
@@ -23,6 +23,7 @@ const schema = z.object({
   long_description: z.string().min(1, "Deskripsi lengkap wajib diisi"),
   benefits: z.array(z.string()).min(1, "Minimal 1 benefit"),
   icon: z.string().min(1, "Ikon wajib diunggah"),
+  gallery: z.array(z.string()),
   status: z.enum(["draft", "pending", "published"]),
   sort_order: z.number().int(),
 });
@@ -59,6 +60,7 @@ export default function ServiceForm({
       long_description: "",
       benefits: [],
       icon: "",
+      gallery: [],
       status: "draft",
       sort_order: 0,
       ...defaultValues,
@@ -122,6 +124,16 @@ export default function ServiceForm({
           name="icon"
           render={({ field }) => (
             <ImageUploader value={field.value} onChange={field.onChange} pathPrefix="services" />
+          )}
+        />
+      </Field>
+
+      <Field label="Galeri">
+        <Controller
+          control={control}
+          name="gallery"
+          render={({ field }) => (
+            <GalleryUploader value={field.value} onChange={field.onChange} pathPrefix="services" />
           )}
         />
       </Field>

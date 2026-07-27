@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import Modal from "@/components/admin/Modal";
@@ -13,9 +13,16 @@ import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
 import TiltCard from "@/components/ui/TiltCard";
 import TeamAvatar from "@/components/ui/TeamAvatar";
-import { deleteTeamMember, importTeamMembers, reviewTeamMember } from "@/app/admin/(dashboard)/team/actions";
+import {
+  deleteTeamMember,
+  deleteTeamMembers,
+  importTeamMembers,
+  moveTeamMember,
+  reviewTeamMember,
+  reviewTeamMembers,
+} from "@/app/admin/(dashboard)/team/actions";
 import TeamMemberForm from "@/components/admin/team/TeamMemberForm";
-import { teamMemberToExcelRow, excelRowToTeamMemberInput } from "@/components/admin/team/excel";
+import { teamMemberToExcelRow, excelRowToTeamMemberInput, downloadTeamMemberImportTemplate } from "@/components/admin/team/excel";
 import { exportRowsToExcel, parseExcelFile } from "@/lib/excel";
 import type { TeamMember } from "@/lib/cms/team";
 
@@ -42,6 +49,20 @@ export default function TeamClient({
   const [formModal, setFormModal] = useState<FormModalState>(null);
   const [importing, setImporting] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<RowSelectionState>({});
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkApproving, setBulkApproving] = useState(false);
+
+  const selectedMembers = useMemo(
+    () => members.filter((m) => selectedIds[m.id]),
+    [members, selectedIds]
+  );
+  const selectedPendingMembers = useMemo(
+    () => selectedMembers.filter((m) => m.status === "pending"),
+    [selectedMembers]
+  );
 
   function handleExport() {
     exportRowsToExcel(members.map(teamMemberToExcelRow), "team");
@@ -99,6 +120,50 @@ export default function TeamClient({
     router.refresh();
   }
 
+  async function handleMove(id: string, direction: "up" | "down") {
+    setMovingId(id);
+    try {
+      await moveTeamMember(id, direction);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal memindahkan urutan anggota tim");
+    } finally {
+      setMovingId(null);
+    }
+  }
+
+  async function confirmBulkDelete() {
+    setBulkDeleting(true);
+    try {
+      await deleteTeamMembers(selectedMembers.map((m) => ({ id: m.id, slug: m.slug })));
+      toast.success(`${selectedMembers.length} anggota tim dihapus`);
+      setSelectedIds({});
+      setBulkDeleteConfirm(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus anggota tim terpilih");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
+  async function handleBulkApprove() {
+    setBulkApproving(true);
+    try {
+      await reviewTeamMembers(
+        selectedPendingMembers.map((m) => ({ id: m.id, slug: m.slug })),
+        true
+      );
+      toast.success(`${selectedPendingMembers.length} anggota tim disetujui & tayang`);
+      setSelectedIds({});
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyetujui anggota tim terpilih");
+    } finally {
+      setBulkApproving(false);
+    }
+  }
+
   const columns = useMemo<ColumnDef<TeamMember, unknown>[]>(
     () => [
       {
@@ -132,48 +197,116 @@ export default function TeamClient({
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            {canApprove && row.original.status === "pending" && (
-              <ApprovalActions
-                disabled={reviewingId === row.original.id}
-                onApprove={() => handleReview(row.original, true)}
-                onReject={() => handleReview(row.original, false)}
-              />
-            )}
-            {canEdit && (
+        cell: ({ row }) => {
+          const position = members.findIndex((m) => m.id === row.original.id);
+          return (
+            <div className="flex items-center gap-2">
+              {canEdit && (
+                <div className="flex items-center gap-1">
+                  <span className="text-ink-500">#{position + 1}</span>
+                  <div className="flex flex-col">
+                    <button
+                      disabled={movingId === row.original.id || position === 0}
+                      onClick={() => handleMove(row.original.id, "up")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Naikkan urutan"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      disabled={movingId === row.original.id || position === members.length - 1}
+                      onClick={() => handleMove(row.original.id, "down")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Turunkan urutan"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              {canApprove && row.original.status === "pending" && (
+                <ApprovalActions
+                  disabled={reviewingId === row.original.id}
+                  onApprove={() => handleReview(row.original, true)}
+                  onReject={() => handleReview(row.original, false)}
+                />
+              )}
+              {canEdit && (
+                <button
+                  onClick={() => setFormModal({ mode: "edit", member: row.original })}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => setPendingDelete(row.original)}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [canEdit, canDelete, canApprove, reviewingId, movingId, members]
+  );
+
+  const canBulkSelect = canDelete || canApprove;
+
+  return (
+    <>
+      {canBulkSelect && selectedMembers.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand-blue/20 bg-brand-blue/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-ink-900">{selectedMembers.length} anggota tim dipilih</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {canApprove && selectedPendingMembers.length > 0 && (
               <button
-                onClick={() => setFormModal({ mode: "edit", member: row.original })}
-                className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+                onClick={handleBulkApprove}
+                disabled={bulkApproving}
+                className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
               >
-                <Pencil className="h-4 w-4" />
+                <Check className="h-3.5 w-3.5" />
+                Setujui Terpilih ({selectedPendingMembers.length})
               </button>
             )}
             {canDelete && (
               <button
-                onClick={() => setPendingDelete(row.original)}
-                className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
+                onClick={() => setBulkDeleteConfirm(true)}
+                className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
+                Hapus Terpilih
               </button>
             )}
+            <button
+              onClick={() => setSelectedIds({})}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-900/5"
+            >
+              <X className="h-3.5 w-3.5" />
+              Batal Pilih
+            </button>
           </div>
-        ),
-      },
-    ],
-    [canEdit, canDelete, canApprove, reviewingId]
-  );
+        </div>
+      )}
 
-  return (
-    <>
       <DataTable
         data={members}
         columns={columns}
         getRowId={(row) => row.id}
         searchPlaceholder="Cari anggota tim..."
+        selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
         actions={
           <div className="flex items-center gap-2">
-            <ExcelActions onExport={handleExport} onImport={canCreate ? handleImport : undefined} importing={importing} />
+            <ExcelActions
+              onExport={handleExport}
+              onImport={canCreate ? handleImport : undefined}
+              onDownloadTemplate={canCreate ? downloadTeamMemberImportTemplate : undefined}
+              importing={importing}
+            />
             {canCreate && (
               <button
                 onClick={() => setFormModal({ mode: "create" })}
@@ -185,7 +318,9 @@ export default function TeamClient({
             )}
           </div>
         }
-        renderCard={(member) => (
+        renderCard={(member) => {
+          const position = members.findIndex((m) => m.id === member.id);
+          return (
           <TiltCard className="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink-900/5 bg-white shadow-sm">
             <div className="relative h-36 w-full">
               <TeamAvatar name={member.name} photoUrl={member.photo_url} className="h-full w-full" />
@@ -197,8 +332,9 @@ export default function TeamClient({
               <p className="font-heading text-sm font-semibold text-ink-900">{member.name}</p>
               <p className="text-xs text-brand-blue">{member.position}</p>
               <p className="mt-2 flex-1 text-xs text-ink-500">/{member.slug}</p>
+              {canEdit && <p className="text-xs text-ink-500">Urutan #{position + 1}</p>}
               {canApprove && member.status === "pending" && (
-                <div className="mb-2 flex justify-center">
+                <div className="mb-2 mt-2 flex justify-center">
                   <ApprovalActions
                     disabled={reviewingId === member.id}
                     onApprove={() => handleReview(member, true)}
@@ -207,6 +343,26 @@ export default function TeamClient({
                 </div>
               )}
               <div className="mt-3 flex items-center gap-2">
+                {canEdit && (
+                  <div className="flex flex-col">
+                    <button
+                      disabled={movingId === member.id || position === 0}
+                      onClick={() => handleMove(member.id, "up")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Naikkan urutan"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      disabled={movingId === member.id || position === members.length - 1}
+                      onClick={() => handleMove(member.id, "down")}
+                      className="text-ink-400 hover:text-ink-700 disabled:opacity-30"
+                      aria-label="Turunkan urutan"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
                 {canEdit && (
                   <button
                     onClick={() => setFormModal({ mode: "edit", member })}
@@ -226,7 +382,8 @@ export default function TeamClient({
               </div>
             </div>
           </TiltCard>
-        )}
+          );
+        }}
       />
 
       <Modal
@@ -254,6 +411,15 @@ export default function TeamClient({
         loading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        title={`Hapus ${selectedMembers.length} anggota tim terpilih?`}
+        description="Tindakan ini tidak bisa dibatalkan."
+        loading={bulkDeleting}
+        onConfirm={confirmBulkDelete}
+        onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
   );

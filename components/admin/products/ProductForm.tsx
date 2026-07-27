@@ -12,6 +12,8 @@ import { ImageUploader, GalleryUploader } from "@/components/admin/ImageUploader
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createProduct, updateProduct, type ProductInput } from "@/app/admin/(dashboard)/products/actions";
+import type { Service } from "@/lib/cms/services";
+import { CURRENCY_OPTIONS } from "@/lib/currency";
 
 const schema = z.object({
   slug: z
@@ -19,8 +21,9 @@ const schema = z.object({
     .min(1, "Slug wajib diisi")
     .regex(/^[a-z0-9-]+$/, "Hanya huruf kecil, angka, dan strip"),
   name: z.string().min(1, "Nama wajib diisi"),
-  category: z.string().min(1, "Kategori wajib diisi"),
-  price: z.string().min(1, "Harga wajib diisi"),
+  service_id: z.string().min(1, "Layanan wajib dipilih"),
+  price_amount: z.number({ error: "Harga wajib diisi" }).min(0, "Harga tidak boleh negatif"),
+  price_currency: z.enum(["IDR", "USD", "SGD", "EUR", "MYR"]),
   description: z.string().min(1, "Deskripsi singkat wajib diisi"),
   long_description: z.string().min(1, "Deskripsi lengkap wajib diisi"),
   features: z.array(z.string()).min(1, "Minimal 1 fitur"),
@@ -35,12 +38,14 @@ type FormValues = z.infer<typeof schema>;
 export default function ProductForm({
   productId,
   defaultValues,
+  services,
   canPublish,
   onSuccess,
   onCancel,
 }: {
   productId?: string;
   defaultValues?: Partial<FormValues>;
+  services: Service[];
   canPublish: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -58,8 +63,9 @@ export default function ProductForm({
     defaultValues: {
       slug: "",
       name: "",
-      category: "",
-      price: "",
+      service_id: "",
+      price_amount: 0,
+      price_currency: "IDR",
       description: "",
       long_description: "",
       features: [],
@@ -102,11 +108,45 @@ export default function ProductForm({
         <Field label="Slug" error={errors.slug?.message} hint="Dipakai di URL, huruf kecil & strip">
           <input {...register("slug")} className={inputClass} placeholder="website-company-profile" />
         </Field>
-        <Field label="Kategori" error={errors.category?.message}>
-          <input {...register("category")} className={inputClass} placeholder="Web Development" />
+        <Field label="Layanan" error={errors.service_id?.message}>
+          <Controller
+            control={control}
+            name="service_id"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={services.map((s) => ({ value: s.id, label: s.title }))}
+                placeholder="Pilih layanan"
+              />
+            )}
+          />
         </Field>
-        <Field label="Harga" error={errors.price?.message}>
-          <input {...register("price")} className={inputClass} placeholder="Rp 3.500.000" />
+        <Field label="Harga" error={errors.price_amount?.message ?? errors.price_currency?.message}>
+          <div className="flex gap-2">
+            <Controller
+              control={control}
+              name="price_currency"
+              render={({ field }) => (
+                <div className="w-32 shrink-0">
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={CURRENCY_OPTIONS}
+                    placeholder="Mata uang"
+                  />
+                </div>
+              )}
+            />
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              {...register("price_amount", { valueAsNumber: true })}
+              className={inputClass}
+              placeholder="3500000"
+            />
+          </div>
         </Field>
       </div>
 

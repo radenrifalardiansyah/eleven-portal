@@ -14,7 +14,8 @@ async function upsertSetting(key: string, value: Record<string, unknown> | unkno
 
   revalidatePath("/admin/site-settings");
   revalidatePath("/admin", "layout");
-  // Navbar/Footer/JSON-LD/favicon render on every public page off this table.
+  revalidatePath("/admin/login");
+  // Navbar/Footer/JSON-LD/favicon/manifest render on every public page off this table.
   revalidatePath("/", "layout");
 }
 

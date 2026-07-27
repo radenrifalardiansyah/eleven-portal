@@ -58,6 +58,67 @@ export async function deleteTeamMember(id: string, slug: string) {
   revalidatePath(`/team/${slug}`);
 }
 
+export async function deleteTeamMembers(items: { id: string; slug: string }[]) {
+  await requireModule("team", "delete");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("team_members")
+    .delete()
+    .in("id", items.map((i) => i.id));
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/team");
+  revalidatePath("/team");
+  for (const item of items) revalidatePath(`/team/${item.slug}`);
+}
+
+export async function reviewTeamMembers(items: { id: string; slug: string }[], approve: boolean) {
+  await requireModule("team", "approve");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("team_members")
+    .update({ status: approve ? "published" : "draft" })
+    .in("id", items.map((i) => i.id));
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/team");
+  revalidatePath("/team");
+  for (const item of items) revalidatePath(`/team/${item.slug}`);
+}
+
+export async function moveTeamMember(id: string, direction: "up" | "down") {
+  await requireModule("team", "edit");
+  const supabase = await createClient();
+
+  const { data: item, error: itemError } = await supabase
+    .from("team_members")
+    .select("id, sort_order")
+    .eq("id", id)
+    .single();
+  if (itemError || !item) throw new Error(itemError?.message ?? "Anggota tim tidak ditemukan");
+
+  const { data: siblings, error: siblingsError } = await supabase
+    .from("team_members")
+    .select("id, sort_order")
+    .order("sort_order");
+  if (siblingsError) throw new Error(siblingsError.message);
+
+  const index = (siblings ?? []).findIndex((s) => s.id === id);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  const neighbor = siblings?.[swapIndex];
+  if (!neighbor) return;
+
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
+    supabase.from("team_members").update({ sort_order: neighbor.sort_order }).eq("id", item.id),
+    supabase.from("team_members").update({ sort_order: item.sort_order }).eq("id", neighbor.id),
+  ]);
+  if (e1) throw new Error(e1.message);
+  if (e2) throw new Error(e2.message);
+
+  revalidatePath("/admin/team");
+  revalidatePath("/team");
+}
+
 export async function importTeamMembers(rows: TeamMemberInput[]) {
   const profile = await requireModule("team", "edit");
   const supabase = await createClient();

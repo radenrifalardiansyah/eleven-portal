@@ -437,8 +437,8 @@ function LogoFaviconSection({
   }
 
   return (
-    <SectionCard title="Logo & Favicon" description="Digunakan di navbar, footer website, sidebar admin, dan ikon tab browser">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+    <SectionCard title="Logo & Favicon" description="Digunakan di navbar, footer website, sidebar admin, ikon tab browser, dan ikon aplikasi mobile">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <LogoSlot
           label="Logo Perusahaan"
           hint="Tampil di navbar & footer website. Gunakan PNG transparan, boleh memanjang (tidak harus persegi)."
@@ -455,9 +455,23 @@ function LogoFaviconSection({
         />
         <LogoSlot
           label="Favicon"
-          hint="Ikon tab browser. PNG persegi, background solid (bukan transparan) agar terbaca di tab gelap/terang."
+          hint="Ikon tab browser di halaman publik website. PNG persegi, background solid (bukan transparan) agar terbaca di tab gelap/terang."
           value={branding.faviconUrl}
           onUploaded={(url) => save({ faviconUrl: url })}
+          canEdit={canEdit}
+        />
+        <LogoSlot
+          label="Favicon Admin"
+          hint="Ikon tab browser khusus saat mengakses halaman /admin. Kosongkan untuk memakai Favicon di atas."
+          value={branding.adminFaviconUrl}
+          onUploaded={(url) => save({ adminFaviconUrl: url })}
+          canEdit={canEdit}
+        />
+        <LogoSlot
+          label="Icon Mobile"
+          hint="Ikon aplikasi saat website di-'Add to Home Screen' di HP (PWA). PNG persegi, minimal 512x512."
+          value={branding.mobileIconUrl}
+          onUploaded={(url) => save({ mobileIconUrl: url })}
           canEdit={canEdit}
         />
       </div>

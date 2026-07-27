@@ -10,6 +10,7 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type RowSelectionState,
 } from "@tanstack/react-table";
 import { LayoutGrid, List, Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default function DataTable<T>({
   getRowId,
   actions,
   showRowNumber = true,
+  selection,
 }: {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -29,17 +31,30 @@ export default function DataTable<T>({
   getRowId?: (row: T) => string;
   actions?: React.ReactNode;
   showRowNumber?: boolean;
+  /** Enables a checkbox column + header "select all" for bulk actions. Selection is
+   *  controlled by the caller so it can be cleared after a bulk action completes. */
+  selection?: {
+    selectedIds: RowSelectionState;
+    onChange: (ids: RowSelectionState) => void;
+  };
 }) {
   const [view, setView] = useState<"table" | "card">("table");
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
+  const enableSelection = !!selection;
 
   const table = useReactTable({
     data,
     columns,
-    state: { globalFilter, sorting },
+    state: { globalFilter, sorting, rowSelection: selection?.selectedIds ?? {} },
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
+    onRowSelectionChange: (updater) => {
+      if (!selection) return;
+      const next = typeof updater === "function" ? updater(selection.selectedIds) : updater;
+      selection.onChange(next);
+    },
+    enableRowSelection: enableSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -50,7 +65,7 @@ export default function DataTable<T>({
 
   const rows = table.getRowModel().rows;
   const { pageIndex, pageSize } = table.getState().pagination;
-  const columnCount = columns.length + (showRowNumber ? 1 : 0);
+  const columnCount = columns.length + (showRowNumber ? 1 : 0) + (enableSelection ? 1 : 0);
 
   return (
     <div className="space-y-4">
@@ -97,6 +112,20 @@ export default function DataTable<T>({
             <thead className="border-b border-ink-900/5 bg-ink-900/[0.02]">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
+                  {enableSelection && (
+                    <th className="w-10 whitespace-nowrap px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={table.getIsAllRowsSelected()}
+                        ref={(el) => {
+                          if (el) el.indeterminate = table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected();
+                        }}
+                        onChange={table.getToggleAllRowsSelectedHandler()}
+                        className="h-4 w-4 rounded border-ink-900/20 text-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                        aria-label="Pilih semua"
+                      />
+                    </th>
+                  )}
                   {showRowNumber && (
                     <th className="w-10 whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
                       #
@@ -125,7 +154,23 @@ export default function DataTable<T>({
             </thead>
             <tbody>
               {rows.map((row, i) => (
-                <tr key={row.id} className="border-b border-ink-900/5 last:border-0 hover:bg-ink-900/[0.015]">
+                <tr
+                  key={row.id}
+                  className={`border-b border-ink-900/5 last:border-0 hover:bg-ink-900/[0.015] ${
+                    row.getIsSelected() ? "bg-brand-blue/5" : ""
+                  }`}
+                >
+                  {enableSelection && (
+                    <td className="px-4 py-3 align-middle">
+                      <input
+                        type="checkbox"
+                        checked={row.getIsSelected()}
+                        onChange={row.getToggleSelectedHandler()}
+                        className="h-4 w-4 rounded border-ink-900/20 text-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                        aria-label="Pilih baris"
+                      />
+                    </td>
+                  )}
                   {showRowNumber && (
                     <td className="px-4 py-3 align-middle text-ink-500">{pageIndex * pageSize + i + 1}</td>
                   )}

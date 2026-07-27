@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { toast } from "sonner";
-import { Trash2, UserPlus } from "lucide-react";
+import { Trash2, UserPlus, Pencil } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
@@ -11,10 +12,23 @@ import Modal from "@/components/admin/Modal";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { ICON_MAP } from "@/components/admin/icon-map";
 import InviteUserForm from "@/components/admin/users/InviteUserForm";
+import EditUserForm from "@/components/admin/users/EditUserForm";
 import { updateUserRole, deleteUserAccount } from "@/app/admin/(dashboard)/users/actions";
 import type { AdminUser } from "@/lib/cms/users";
 import type { RoleRow } from "@/lib/cms/roles";
 import type { UserRole } from "@/lib/supabase/types";
+
+function Avatar({ user, size = "h-9 w-9 text-xs" }: { user: AdminUser; size?: string }) {
+  return (
+    <div className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-brand-blue-light font-semibold text-white ${size}`}>
+      {user.avatarUrl ? (
+        <Image src={user.avatarUrl} alt="" width={40} height={40} className="h-full w-full object-cover" unoptimized />
+      ) : (
+        (user.fullName ?? user.email ?? "?").charAt(0).toUpperCase()
+      )}
+    </div>
+  );
+}
 
 export default function UsersClient({
   users,
@@ -36,6 +50,7 @@ export default function UsersClient({
   const [pendingDelete, setPendingDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   async function handleRoleChange(userId: string, role: UserRole) {
@@ -72,11 +87,7 @@ export default function UsersClient({
         id: "avatar",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-blue-light text-xs font-semibold text-white">
-            {(row.original.fullName ?? row.original.email ?? "?").charAt(0).toUpperCase()}
-          </div>
-        ),
+        cell: ({ row }) => <Avatar user={row.original} />,
       },
       {
         accessorKey: "fullName",
@@ -133,14 +144,25 @@ export default function UsersClient({
         enableSorting: false,
         cell: ({ row }) => {
           const isSelf = row.original.id === currentUserId;
-          if (!canDelete || isSelf) return null;
           return (
-            <button
-              onClick={() => setPendingDelete(row.original)}
-              className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              {canEdit && (
+                <button
+                  onClick={() => setEditingUser(row.original)}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-brand-blue/10 hover:text-brand-blue"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+              {canDelete && !isSelf && (
+                <button
+                  onClick={() => setPendingDelete(row.original)}
+                  className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           );
         },
       },
@@ -158,9 +180,7 @@ export default function UsersClient({
         renderCard={(user) => (
           <div className="rounded-2xl border border-ink-900/5 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-blue-light text-sm font-semibold text-white">
-                {(user.fullName ?? user.email ?? "?").charAt(0).toUpperCase()}
-              </div>
+              <Avatar user={user} size="h-10 w-10 text-sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-ink-900">{user.fullName ?? "-"}</p>
                 <p className="truncate text-xs text-ink-500">{user.email}</p>
@@ -170,14 +190,24 @@ export default function UsersClient({
               <span className="inline-block rounded-lg bg-brand-blue/10 px-2.5 py-1 text-xs font-medium text-brand-blue">
                 {roleLabelByKey.get(user.role) ?? user.role}
               </span>
-              {canDelete && user.id !== currentUserId && (
-                <button
-                  onClick={() => setPendingDelete(user)}
-                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                >
-                  Hapus
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {canEdit && (
+                  <button
+                    onClick={() => setEditingUser(user)}
+                    className="rounded-lg border border-ink-900/10 px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-900/5"
+                  >
+                    Edit
+                  </button>
+                )}
+                {canDelete && user.id !== currentUserId && (
+                  <button
+                    onClick={() => setPendingDelete(user)}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -202,6 +232,23 @@ export default function UsersClient({
             router.refresh();
           }}
         />
+      </Modal>
+
+      <Modal
+        open={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title="Edit Pengguna"
+        description="Perbarui foto profil dan data pengguna."
+      >
+        {editingUser && (
+          <EditUserForm
+            user={editingUser}
+            onSuccess={() => {
+              setEditingUser(null);
+              router.refresh();
+            }}
+          />
+        )}
       </Modal>
 
       <ConfirmDialog

@@ -6,6 +6,10 @@ export type AdminUser = {
   id: string;
   email: string | null;
   fullName: string | null;
+  avatarUrl: string | null;
+  phone: string | null;
+  position: string | null;
+  bio: string | null;
   role: UserRole;
   createdAt: string;
   lastSignInAt: string | null;
@@ -15,7 +19,7 @@ export async function getAllUsers(): Promise<AdminUser[]> {
   const supabase = await createClient();
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, created_at")
+    .select("id, full_name, avatar_url, phone, position, bio, role, created_at")
     .order("created_at");
   if (error) throw new Error(error.message);
 
@@ -31,6 +35,10 @@ export async function getAllUsers(): Promise<AdminUser[]> {
       id: p.id,
       email: authUser?.email ?? null,
       fullName: p.full_name,
+      avatarUrl: p.avatar_url,
+      phone: p.phone,
+      position: p.position,
+      bio: p.bio,
       role: p.role,
       createdAt: p.created_at,
       lastSignInAt: authUser?.last_sign_in_at ?? null,

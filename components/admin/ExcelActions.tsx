@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef } from "react";
-import { Download, Upload, Loader2 } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet } from "lucide-react";
 
 export default function ExcelActions({
   onExport,
   onImport,
+  onDownloadTemplate,
   importing,
 }: {
   onExport: () => void;
   onImport?: (file: File) => void;
+  onDownloadTemplate?: () => void;
   importing?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -19,12 +21,23 @@ export default function ExcelActions({
       <button
         type="button"
         onClick={onExport}
-        title="Export Excel"
+        title="Export Excel (data saat ini)"
         aria-label="Export Excel"
         className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-ink-900/5 hover:text-ink-900"
       >
         <Download className="h-4 w-4" />
       </button>
+      {onDownloadTemplate && (
+        <button
+          type="button"
+          onClick={onDownloadTemplate}
+          title="Download Template Import"
+          aria-label="Download Template Import"
+          className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-ink-900/5 hover:text-ink-900"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+        </button>
+      )}
       {onImport && (
         <>
           <button

@@ -12,6 +12,8 @@ import { ImageUploader } from "@/components/admin/ImageUploader";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createProject, updateProject, type ProjectInput } from "@/app/admin/(dashboard)/projects/actions";
+import type { Product } from "@/lib/cms/products";
+import type { TestimonialClient } from "@/lib/cms/testimonials";
 
 const schema = z.object({
   slug: z
@@ -19,7 +21,8 @@ const schema = z.object({
     .min(1, "Slug wajib diisi")
     .regex(/^[a-z0-9-]+$/, "Hanya huruf kecil, angka, dan strip"),
   title: z.string().min(1, "Judul wajib diisi"),
-  category: z.string().min(1, "Kategori wajib diisi"),
+  product_id: z.string().min(1, "Produk wajib dipilih"),
+  client_id: z.string(),
   year: z.string().min(1, "Tahun wajib diisi"),
   image: z.string().min(1, "Gambar wajib diunggah"),
   href: z.string().min(1, "Link proyek wajib diisi"),
@@ -35,12 +38,16 @@ type FormValues = z.infer<typeof schema>;
 export default function ProjectForm({
   projectId,
   defaultValues,
+  products,
+  clients,
   canPublish,
   onSuccess,
   onCancel,
 }: {
   projectId?: string;
   defaultValues?: Partial<FormValues>;
+  products: Product[];
+  clients: TestimonialClient[];
   canPublish: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -58,7 +65,8 @@ export default function ProjectForm({
     defaultValues: {
       slug: "",
       title: "",
-      category: "",
+      product_id: "",
+      client_id: "",
       year: "",
       image: "",
       href: "",
@@ -74,10 +82,11 @@ export default function ProjectForm({
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
     try {
+      const payload: ProjectInput = { ...values, client_id: values.client_id || null };
       if (projectId) {
-        await updateProject(projectId, values as ProjectInput);
+        await updateProject(projectId, payload);
       } else {
-        await createProject(values as ProjectInput);
+        await createProject(payload);
       }
       toast.success("Case study berhasil disimpan");
       if (onSuccess) {
@@ -102,11 +111,36 @@ export default function ProjectForm({
         <Field label="Slug" error={errors.slug?.message} hint="Dipakai di URL, huruf kecil & strip">
           <input {...register("slug")} className={inputClass} />
         </Field>
-        <Field label="Kategori" error={errors.category?.message}>
-          <input {...register("category")} className={inputClass} placeholder="Web Development - Landing Page" />
+        <Field label="Produk" error={errors.product_id?.message}>
+          <Controller
+            control={control}
+            name="product_id"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={products.map((p) => ({ value: p.id, label: p.name }))}
+                placeholder="Pilih produk"
+              />
+            )}
+          />
         </Field>
         <Field label="Tahun" error={errors.year?.message}>
           <input {...register("year")} className={inputClass} placeholder="2024" />
+        </Field>
+        <Field label="Client" error={errors.client_id?.message} hint="Opsional — hubungkan case study ini ke client yang sudah dibuat">
+          <Controller
+            control={control}
+            name="client_id"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={[{ value: "", label: "Tidak ada" }, ...clients.map((c) => ({ value: c.id, label: c.name }))]}
+                placeholder="Pilih client"
+              />
+            )}
+          />
         </Field>
         <Field label="Link Live Site" error={errors.href?.message}>
           <input {...register("href")} className={inputClass} placeholder="https://..." />

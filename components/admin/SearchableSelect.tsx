@@ -65,18 +65,16 @@ export default function SearchableSelect({
 
       {open && (
         <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-ink-900/10 bg-white shadow-xl">
-          {options.length > 6 && (
-            <div className="relative border-b border-ink-900/5 p-2">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400" />
-              <input
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={searchPlaceholder}
-                className="w-full rounded-lg border border-ink-900/10 bg-ink-900/[0.02] py-1.5 pl-8 pr-2 text-sm outline-none focus:border-brand-blue"
-              />
-            </div>
-          )}
+          <div className="relative border-b border-ink-900/5 p-2">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400" />
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full rounded-lg border border-ink-900/10 bg-ink-900/[0.02] py-1.5 pl-8 pr-2 text-sm outline-none focus:border-brand-blue"
+            />
+          </div>
           <div className="max-h-64 overflow-y-auto p-1">
             {filtered.map((opt) => {
               const isSelected = opt.value === value;

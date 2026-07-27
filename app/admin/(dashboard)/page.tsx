@@ -22,7 +22,7 @@ export default async function AdminDashboardPage() {
     { label: "Stories", value: stories.count ?? 0, icon: Newspaper },
     { label: "Team Members", value: team.count ?? 0, icon: Users, accent: "yellow" },
     { label: "Case Studies", value: projects.count ?? 0, icon: Briefcase },
-    { label: "Testimonials", value: testimonials.count ?? 0, icon: Quote, accent: "yellow" },
+    { label: "Client", value: testimonials.count ?? 0, icon: Quote, accent: "yellow" },
   ];
 
   return (

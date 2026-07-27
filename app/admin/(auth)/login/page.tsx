@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import LoginForm from "@/components/admin/LoginForm";
+import { getSiteSettings } from "@/lib/cms/public-site-settings";
 
-export const metadata: Metadata = {
-  title: "Admin Login",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { branding } = await getSiteSettings();
+  const faviconUrl = branding.adminFaviconUrl || branding.faviconUrl || "/images/favicon.png";
+
+  return {
+    title: "Admin Login",
+    robots: { index: false, follow: false },
+    icons: { icon: faviconUrl, apple: faviconUrl },
+  };
+}
 
 export default function AdminLoginPage() {
   return (

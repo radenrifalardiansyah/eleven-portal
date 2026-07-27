@@ -2,12 +2,13 @@ import { requireModule } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { getAllProducts } from "@/lib/cms/products";
+import { getAllServices } from "@/lib/cms/services";
 import ProductsClient from "@/components/admin/products/ProductsClient";
 import SectionContentCard from "@/components/admin/SectionContentCard";
 
 export default async function AdminProductsPage() {
   const profile = await requireModule("products", "view");
-  const products = await getAllProducts();
+  const [products, services] = await Promise.all([getAllProducts(), getAllServices()]);
 
   const canCreate = can(profile.permissions, "products", "edit");
   const canEdit = can(profile.permissions, "products", "edit");
@@ -49,6 +50,7 @@ export default async function AdminProductsPage() {
 
       <ProductsClient
         products={products}
+        services={services}
         canCreate={canCreate}
         canEdit={canEdit}
         canDelete={canDelete}
