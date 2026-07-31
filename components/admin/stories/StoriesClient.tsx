@@ -12,6 +12,7 @@ import Modal from "@/components/admin/Modal";
 import ExcelActions from "@/components/admin/ExcelActions";
 import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
+import ImageLightbox from "@/components/admin/ImageLightbox";
 import TiltCard from "@/components/ui/TiltCard";
 import {
   deleteStory,
@@ -305,6 +306,9 @@ export default function StoriesClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari story..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(story) => (
+          <StoryDetail story={story} canEdit={canEdit} onEdit={() => setFormModal({ mode: "edit", story })} />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -444,5 +448,96 @@ function LabelBadge({ label, color }: { label: string; color: string }) {
     >
       {label}
     </span>
+  );
+}
+
+function StoryDetail({
+  story,
+  canEdit,
+  onEdit,
+}: {
+  story: Story;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const images = [story.image].filter(Boolean);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={story.status} />
+        <LabelBadge label={story.label} color={story.label_color} />
+        <span className="text-xs text-ink-500">{story.date}</span>
+      </div>
+
+      {images.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setPreviewIndex(0)}
+          className="group relative block h-40 w-full max-w-sm overflow-hidden rounded-xl bg-ink-900/5"
+          aria-label="Lihat gambar"
+        >
+          <Image
+            src={images[0]}
+            alt=""
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+            unoptimized
+          />
+        </button>
+      )}
+
+      {previewIndex !== null && (
+        <ImageLightbox
+          images={images}
+          index={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi</p>
+        <p className="mt-1 text-sm text-ink-900">{story.description}</p>
+      </div>
+
+      {story.content.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Isi Story</p>
+          <div className="mt-1.5 space-y-2">
+            {story.content.map((paragraph, i) => (
+              <p key={i} className="text-sm text-ink-900">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 border-t border-ink-900/5 pt-4">
+        {story.author_image && (
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-ink-900/5">
+            <Image src={story.author_image} alt="" fill className="object-cover" unoptimized />
+          </div>
+        )}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Penulis</p>
+          <p className="text-sm text-ink-900">{story.author}</p>
+        </div>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Story
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, LogOut, ChevronDown, Globe } from "lucide-react";
+import { Menu, LogOut, ChevronDown, ChevronLeft, ChevronRight, Globe } from "lucide-react";
 import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import ConfirmDialog from "./ConfirmDialog";
@@ -35,8 +35,21 @@ export default function AdminChrome({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    setSidebarCollapsed(localStorage.getItem("admin-sidebar-collapsed") === "1");
+  }, []);
+
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("admin-sidebar-collapsed", next ? "1" : "0");
+      return next;
+    });
+  }
 
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(() => {
     const initial = new Set<string>();
@@ -83,96 +96,99 @@ export default function AdminChrome({
     .filter((item): item is NavItem & { href: string } => item.showBottomNav && Boolean(item.href))
     .slice(0, 4);
 
-  const sidebarContent = (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-6 py-6">
-        {adminLogoUrl ? (
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl">
-            <Image src={adminLogoUrl} alt={brandName} fill className="object-cover" unoptimized />
-          </div>
-        ) : (
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-lg shadow-brand-blue/30">
-            11
-          </div>
-        )}
-        <div>
-          <p className="font-heading text-sm font-semibold text-ink-900">{brandName}</p>
-          <p className="text-xs text-ink-500">Content Studio</p>
+  function renderSidebar(isCollapsed: boolean) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className={`flex items-center gap-2 py-6 ${isCollapsed ? "justify-center px-3" : "px-6"}`}>
+          {adminLogoUrl ? (
+            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl">
+              <Image src={adminLogoUrl} alt={brandName} fill className="object-cover" unoptimized />
+            </div>
+          ) : (
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-gradient text-sm font-bold text-white shadow-lg shadow-brand-blue/30">
+              11
+            </div>
+          )}
+          {!isCollapsed && (
+            <div>
+              <p className="font-heading text-sm font-semibold text-ink-900">{brandName}</p>
+              <p className="text-xs text-ink-500">Content Studio</p>
+            </div>
+          )}
         </div>
-      </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto px-3 pb-4">
-        {navGroups.map((group) => {
-          const collapsed = collapsedGroups.has(group.label);
-          return (
-            <div key={group.label}>
-              <button
-                type="button"
-                onClick={() => toggleGroup(group.label)}
-                className="flex w-full items-center justify-between px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-ink-500/70 hover:text-ink-700"
-              >
-                {group.label}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {!collapsed && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
+        <nav
+          className={`flex-1 space-y-2 overflow-y-auto pb-4 ${
+            isCollapsed ? "scrollbar-none overflow-x-hidden px-2" : "px-3"
+          }`}
+        >
+          {navGroups.map((group) => {
+            const collapsed = !isCollapsed && collapsedGroups.has(group.label);
+            return (
+              <div key={group.label}>
+                {isCollapsed ? (
+                  <div className="mx-2 my-2 border-t border-ink-900/5" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.label)}
+                    className="flex w-full items-center justify-between px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-ink-500/70 hover:text-ink-700"
                   >
-                    <div className="space-y-1 pb-1">
-                      {group.items
-                        .filter((item) => !item.parentId)
-                        .map((item) => {
-                          const children = group.items.filter((child) => child.parentId === item.id);
-                          const hasChildren = children.length > 0;
-                          const submenuOpen = openSubmenus.has(item.id);
-                          const active = Boolean(
-                            item.href &&
-                              (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))
-                          );
-                          return (
-                            <div key={item.id}>
-                              <div
-                                className={`flex items-center gap-1 rounded-xl ${active ? "bg-brand-blue/10 text-brand-blue" : ""}`}
-                              >
-                                <NavLink
-                                  item={item}
-                                  pathname={pathname}
-                                  onNavigate={() => setMobileOpen(false)}
-                                  className="flex-1"
-                                  plain={hasChildren}
-                                  onToggle={hasChildren ? () => toggleSubmenu(item.id) : undefined}
-                                />
-                                {hasChildren && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleSubmenu(item.id)}
-                                    aria-label={submenuOpen ? "Tutup submenu" : "Buka submenu"}
-                                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-                                      active ? "text-brand-blue" : "text-ink-400 hover:bg-ink-900/5 hover:text-ink-700"
-                                    }`}
-                                  >
-                                    <ChevronDown
-                                      className={`h-4 w-4 transition-transform ${submenuOpen ? "" : "-rotate-90"}`}
-                                    />
-                                  </button>
-                                )}
-                              </div>
-                              {hasChildren && (
-                                <AnimatePresence initial={false}>
-                                  {submenuOpen && (
-                                    <motion.div
-                                      initial={{ height: 0, opacity: 0 }}
-                                      animate={{ height: "auto", opacity: 1 }}
-                                      exit={{ height: 0, opacity: 0 }}
-                                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                                      className="overflow-hidden"
+                    {group.label}
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
+                  </button>
+                )}
+                <AnimatePresence initial={false}>
+                  {!collapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-1 pb-1">
+                        {group.items
+                          .filter((item) => !item.parentId)
+                          .map((item) => {
+                            const children = group.items.filter((child) => child.parentId === item.id);
+                            const hasChildren = children.length > 0;
+                            const submenuOpen = openSubmenus.has(item.id);
+                            const active = Boolean(
+                              item.href &&
+                                (pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href)))
+                            );
+
+                            if (isCollapsed) {
+                              const Icon = ICON_MAP[item.icon];
+                              return (
+                                <div key={item.id} className="group/rail relative">
+                                  {item.href ? (
+                                    <Link
+                                      href={item.href}
+                                      title={item.label}
+                                      className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl ${
+                                        active
+                                          ? "bg-brand-blue/10 text-brand-blue"
+                                          : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
+                                      }`}
                                     >
-                                      <div className="ml-4 space-y-1 border-l border-ink-900/5 pl-3 pt-1">
+                                      {Icon && <Icon className="h-[18px] w-[18px]" />}
+                                    </Link>
+                                  ) : (
+                                    <div
+                                      title={item.label}
+                                      className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-ink-400"
+                                    >
+                                      {Icon && <Icon className="h-[18px] w-[18px]" />}
+                                    </div>
+                                  )}
+                                  {hasChildren && (
+                                    <div className="invisible absolute left-full top-0 z-50 ml-2 w-48 rounded-xl border border-ink-900/5 bg-white p-2 opacity-0 shadow-lg transition-opacity group-hover/rail:visible group-hover/rail:opacity-100">
+                                      <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500/70">
+                                        {item.label}
+                                      </p>
+                                      <div className="space-y-1">
                                         {children.map((child) => (
                                           <NavLink
                                             key={child.id}
@@ -182,54 +198,116 @@ export default function AdminChrome({
                                           />
                                         ))}
                                       </div>
-                                    </motion.div>
+                                    </div>
                                   )}
-                                </AnimatePresence>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </nav>
+                                </div>
+                              );
+                            }
 
-      <div className="border-t border-ink-900/5 p-4">
-        <div className="flex items-center gap-3 rounded-xl bg-ink-900/[0.03] p-3">
-          <div className="relative h-9 w-9 shrink-0">
-            <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-brand-blue-light text-sm font-semibold text-white">
-              {profile.avatarUrl ? (
-                <Image src={profile.avatarUrl} alt="" width={36} height={36} className="h-full w-full object-cover" unoptimized />
-              ) : (
-                initial
-              )}
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-ink-900">
-              {profile.fullName ?? profile.email}
-            </p>
-            <p className="text-xs text-ink-500">{profile.roleLabel}</p>
-          </div>
-          <button
-            onClick={() => setLogoutConfirmOpen(true)}
-            aria-label="Logout"
-            className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                            return (
+                              <div key={item.id}>
+                                <div
+                                  className={`flex items-center gap-1 rounded-xl ${active ? "bg-brand-blue/10 text-brand-blue" : ""}`}
+                                >
+                                  <NavLink
+                                    item={item}
+                                    pathname={pathname}
+                                    onNavigate={() => setMobileOpen(false)}
+                                    className="flex-1"
+                                    plain={hasChildren}
+                                    onToggle={hasChildren ? () => toggleSubmenu(item.id) : undefined}
+                                  />
+                                  {hasChildren && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleSubmenu(item.id)}
+                                      aria-label={submenuOpen ? "Tutup submenu" : "Buka submenu"}
+                                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                                        active ? "text-brand-blue" : "text-ink-400 hover:bg-ink-900/5 hover:text-ink-700"
+                                      }`}
+                                    >
+                                      <ChevronDown
+                                        className={`h-4 w-4 transition-transform ${submenuOpen ? "" : "-rotate-90"}`}
+                                      />
+                                    </button>
+                                  )}
+                                </div>
+                                {hasChildren && (
+                                  <AnimatePresence initial={false}>
+                                    {submenuOpen && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="ml-4 space-y-1 border-l border-ink-900/5 pl-3 pt-1">
+                                          {children.map((child) => (
+                                            <NavLink
+                                              key={child.id}
+                                              item={child}
+                                              pathname={pathname}
+                                              onNavigate={() => setMobileOpen(false)}
+                                            />
+                                          ))}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-ink-900/5 p-4">
+          <div
+            className={`flex items-center gap-3 rounded-xl bg-ink-900/[0.03] p-3 ${
+              isCollapsed ? "flex-col" : ""
+            }`}
           >
-            <LogOut className="h-4 w-4" />
-          </button>
+            <div className="relative h-9 w-9 shrink-0">
+              <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-brand-blue-light text-sm font-semibold text-white">
+                {profile.avatarUrl ? (
+                  <Image src={profile.avatarUrl} alt="" width={36} height={36} className="h-full w-full object-cover" unoptimized />
+                ) : (
+                  initial
+                )}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+              </span>
+            </div>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-ink-900">
+                  {profile.fullName ?? profile.email}
+                </p>
+                <p className="text-xs text-ink-500">{profile.roleLabel}</p>
+              </div>
+            )}
+            <button
+              onClick={() => setLogoutConfirmOpen(true)}
+              aria-label="Logout"
+              title="Logout"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F8FB]">
@@ -239,12 +317,25 @@ export default function AdminChrome({
         title="Logout dari akun?"
         description="Kamu perlu login kembali untuk mengakses Content Studio."
         confirmLabel="Logout"
+        loadingLabel="Logout..."
         loading={loggingOut}
         onConfirm={handleLogout}
         onCancel={() => setLogoutConfirmOpen(false)}
       />
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-ink-900/5 bg-white lg:block">
-        {sidebarContent}
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 hidden border-r border-ink-900/5 bg-white transition-all duration-200 lg:block ${
+          sidebarCollapsed ? "lg:w-20" : "lg:w-64"
+        }`}
+      >
+        {renderSidebar(sidebarCollapsed)}
+        <button
+          type="button"
+          onClick={toggleSidebarCollapsed}
+          aria-label={sidebarCollapsed ? "Perluas sidebar" : "Ciutkan sidebar"}
+          className="absolute -right-3 top-20 hidden h-6 w-6 items-center justify-center rounded-full border border-ink-900/10 bg-white text-ink-500 shadow-md hover:bg-ink-900/5 hover:text-ink-900 lg:flex"
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
       </aside>
 
       <AnimatePresence>
@@ -264,13 +355,13 @@ export default function AdminChrome({
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
               className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl lg:hidden"
             >
-              {sidebarContent}
+              {renderSidebar(false)}
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      <div className="lg:pl-64">
+      <div className={`transition-all duration-200 ${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"}`}>
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-4 px-4 py-3">
             <button

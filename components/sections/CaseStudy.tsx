@@ -10,7 +10,19 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import TiltCard from "@/components/ui/TiltCard";
 import type { PublicProject } from "@/lib/cms/public-projects";
 
-export default function CaseStudy({ projects }: { projects: PublicProject[] }) {
+export default function CaseStudy({
+  projects,
+  eyebrow = "Case Study",
+  title = "Karya Terbaru Kami",
+  description = "Sebagian proyek yang telah kami kerjakan bersama berbagai klien, mulai dari korporasi, kementerian, hingga brand nasional.",
+  ctaLabel = "Lihat Semua Case Study",
+}: {
+  projects: PublicProject[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
+}) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, align: "center", containScroll: false },
     [AutoScroll({ delay: 3500, stopOnInteraction: false, stopOnMouseEnter: true })]
@@ -34,11 +46,7 @@ export default function CaseStudy({ projects }: { projects: PublicProject[] }) {
   return (
     <section id="case-study" className="relative overflow-hidden bg-white py-28">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle
-          eyebrow="Case Study"
-          title="Karya Terbaru Kami"
-          description="Sebagian proyek yang telah kami kerjakan bersama berbagai klien, mulai dari korporasi, kementerian, hingga brand nasional."
-        />
+        <SectionTitle eyebrow={eyebrow} title={title} description={description} />
       </div>
 
       <div className="relative">
@@ -109,7 +117,7 @@ export default function CaseStudy({ projects }: { projects: PublicProject[] }) {
             data-cursor-hover
             className="inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
           >
-            Lihat Semua Case Study
+            {ctaLabel}
             <ArrowRight size={16} />
           </Link>
         </div>

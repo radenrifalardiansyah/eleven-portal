@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,7 +12,7 @@ import {
   type SortingState,
   type RowSelectionState,
 } from "@tanstack/react-table";
-import { LayoutGrid, List, Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { LayoutGrid, List, Search, ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown } from "lucide-react";
 
 export default function DataTable<T>({
   data,
@@ -23,6 +23,7 @@ export default function DataTable<T>({
   actions,
   showRowNumber = true,
   selection,
+  renderExpandedRow,
 }: {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -37,11 +38,17 @@ export default function DataTable<T>({
     selectedIds: RowSelectionState;
     onChange: (ids: RowSelectionState) => void;
   };
+  /** When provided, each row becomes clickable and expands inline (accordion-style)
+   *  to show this content in an extra row underneath. Cells with their own
+   *  interactive controls (checkbox, action buttons) should stopPropagation. */
+  renderExpandedRow?: (row: T) => React.ReactNode;
 }) {
   const [view, setView] = useState<"table" | "card">("table");
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const enableSelection = !!selection;
+  const enableExpand = !!renderExpandedRow;
 
   const table = useReactTable({
     data,
@@ -65,7 +72,8 @@ export default function DataTable<T>({
 
   const rows = table.getRowModel().rows;
   const { pageIndex, pageSize } = table.getState().pagination;
-  const columnCount = columns.length + (showRowNumber ? 1 : 0) + (enableSelection ? 1 : 0);
+  const columnCount =
+    columns.length + (showRowNumber ? 1 : 0) + (enableSelection ? 1 : 0) + (enableExpand ? 1 : 0);
 
   return (
     <div className="space-y-4">
@@ -112,6 +120,7 @@ export default function DataTable<T>({
             <thead className="border-b border-ink-900/5 bg-ink-900/[0.02]">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
+                  {enableExpand && <th className="w-8 whitespace-nowrap px-2 py-3" />}
                   {enableSelection && (
                     <th className="w-10 whitespace-nowrap px-4 py-3">
                       <input
@@ -153,34 +162,53 @@ export default function DataTable<T>({
               ))}
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-ink-900/5 last:border-0 hover:bg-ink-900/[0.015] ${
-                    row.getIsSelected() ? "bg-brand-blue/5" : ""
-                  }`}
-                >
-                  {enableSelection && (
-                    <td className="px-4 py-3 align-middle">
-                      <input
-                        type="checkbox"
-                        checked={row.getIsSelected()}
-                        onChange={row.getToggleSelectedHandler()}
-                        className="h-4 w-4 rounded border-ink-900/20 text-brand-blue focus:ring-2 focus:ring-brand-blue/20"
-                        aria-label="Pilih baris"
-                      />
-                    </td>
-                  )}
-                  {showRowNumber && (
-                    <td className="px-4 py-3 align-middle text-ink-500">{pageIndex * pageSize + i + 1}</td>
-                  )}
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 align-middle text-ink-900">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {rows.map((row, i) => {
+                const isExpanded = enableExpand && row.id === expandedId;
+                return (
+                  <Fragment key={row.id}>
+                    <tr
+                      onClick={enableExpand ? () => setExpandedId(isExpanded ? null : row.id) : undefined}
+                      className={`border-b border-ink-900/5 last:border-0 hover:bg-ink-900/[0.015] ${
+                        row.getIsSelected() || isExpanded ? "bg-brand-blue/5" : ""
+                      } ${enableExpand ? "cursor-pointer" : ""}`}
+                    >
+                      {enableExpand && (
+                        <td className="px-2 py-3 align-middle text-ink-400">
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          />
+                        </td>
+                      )}
+                      {enableSelection && (
+                        <td className="px-4 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={row.getIsSelected()}
+                            onChange={row.getToggleSelectedHandler()}
+                            className="h-4 w-4 rounded border-ink-900/20 text-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                            aria-label="Pilih baris"
+                          />
+                        </td>
+                      )}
+                      {showRowNumber && (
+                        <td className="px-4 py-3 align-middle text-ink-500">{pageIndex * pageSize + i + 1}</td>
+                      )}
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-4 py-3 align-middle text-ink-900">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                    {isExpanded && renderExpandedRow && (
+                      <tr className="border-b border-ink-900/5 bg-ink-900/[0.015] last:border-0">
+                        <td colSpan={columnCount} className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                          {renderExpandedRow(row.original)}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={columnCount} className="px-4 py-10 text-center text-ink-500">

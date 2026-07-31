@@ -211,6 +211,9 @@ export default function UsersClient({
             </div>
           </div>
         )}
+        renderExpandedRow={(user) => (
+          <UserDetail user={user} canEdit={canEdit} onEdit={() => setEditingUser(user)} />
+        )}
         actions={
           canCreate && (
             <button
@@ -260,5 +263,60 @@ export default function UsersClient({
         onCancel={() => setPendingDelete(null)}
       />
     </>
+  );
+}
+
+function UserDetail({
+  user,
+  canEdit,
+  onEdit,
+}: {
+  user: AdminUser;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <Avatar user={user} size="h-14 w-14 text-lg" />
+        <div>
+          <p className="font-heading text-sm font-semibold text-ink-900">{user.fullName ?? "-"}</p>
+          <p className="text-xs text-ink-500">{user.email}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Telepon</p>
+          <p className="mt-1 text-sm text-ink-900">{user.phone ?? "-"}</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Jabatan</p>
+          <p className="mt-1 text-sm text-ink-900">{user.position ?? "-"}</p>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Bio</p>
+        <p className="mt-1 text-sm text-ink-900">{user.bio ?? "-"}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Bergabung: {new Date(user.createdAt).toLocaleString("id-ID")}</p>
+        <p>Terakhir Login: {user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleString("id-ID") : "-"}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Pengguna
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

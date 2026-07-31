@@ -15,10 +15,10 @@ export type MenuItemRow = {
   always_visible: boolean;
   show_bottom_nav: boolean;
   show_on_portal: boolean;
+  show_section_on_portal: boolean;
   portal_href: string | null;
   portal_match_path: string | null;
   portal_label: string | null;
-  portal_sort_order: number;
 };
 
 export async function getAllMenuGroups(): Promise<MenuGroupRow[]> {

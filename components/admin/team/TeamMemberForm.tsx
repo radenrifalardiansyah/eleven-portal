@@ -233,24 +233,21 @@ export default function TeamMemberForm({
         </Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Urutan Tampil">
-          <input type="number" {...register("sort_order", { valueAsNumber: true })} className={inputClass} />
-        </Field>
-        <Field label="Status">
-          <Controller
-            control={control}
-            name="status"
-            render={({ field }) => (
-              <SearchableSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={getStatusOptions(canPublish)}
-              />
-            )}
-          />
-        </Field>
-      </div>
+      <input type="hidden" {...register("sort_order", { valueAsNumber: true })} />
+
+      <Field label="Status">
+        <Controller
+          control={control}
+          name="status"
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onChange={field.onChange}
+              options={getStatusOptions(canPublish)}
+            />
+          )}
+        />
+      </Field>
 
       <div className="flex justify-end gap-2 pt-2">
         <button

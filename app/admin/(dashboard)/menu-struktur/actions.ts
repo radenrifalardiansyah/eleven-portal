@@ -13,10 +13,10 @@ export type MenuItemInput = {
   always_visible: boolean;
   show_bottom_nav: boolean;
   show_on_portal: boolean;
+  show_section_on_portal: boolean;
   portal_href: string | null;
   portal_match_path: string | null;
   portal_label: string | null;
-  portal_sort_order: number;
 };
 
 async function nextSortOrder(groupId: string, parentId: string | null) {
@@ -54,7 +54,7 @@ export async function createMenuItem(input: MenuItemInput) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
-  if (input.show_on_portal) revalidatePath("/", "layout");
+  if (input.show_on_portal || input.show_section_on_portal) revalidatePath("/", "layout");
 }
 
 export async function updateMenuItem(id: string, input: MenuItemInput) {

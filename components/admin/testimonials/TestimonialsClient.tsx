@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown, Star, Globe, Mail, Phone } from "lucide-react";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
@@ -325,6 +325,13 @@ export default function TestimonialsClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari klien..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(client) => (
+          <TestimonialDetail
+            client={client}
+            canEdit={canEdit}
+            onEdit={() => setFormModal({ mode: "edit", client })}
+          />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -445,5 +452,111 @@ export default function TestimonialsClient({
         onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
+  );
+}
+
+function TestimonialDetail({
+  client,
+  canEdit,
+  onEdit,
+}: {
+  client: TestimonialClient;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const hasContact = client.contact_name || client.contact_email || client.contact_phone;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={client.status} />
+        {client.industry && (
+          <span className="rounded-lg bg-brand-blue/10 px-2.5 py-1 text-xs font-medium text-brand-blue">
+            {client.industry}
+          </span>
+        )}
+        {client.website && (
+          <a
+            href={client.website}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-brand-blue"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {client.website}
+          </a>
+        )}
+      </div>
+
+      {client.description && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Tentang Klien</p>
+          <p className="mt-1 text-sm text-ink-900">{client.description}</p>
+        </div>
+      )}
+
+      {(client.testimonial_quote || client.testimonial_author) && (
+        <div className="rounded-xl border border-ink-900/10 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Testimoni</p>
+          {client.testimonial_rating != null && (
+            <div className="mt-1.5 flex gap-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < (client.testimonial_rating ?? 0) ? "fill-brand-yellow text-brand-yellow" : "text-ink-200"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-sm italic text-ink-900">&ldquo;{client.testimonial_quote}&rdquo;</p>
+          <p className="mt-1 text-xs font-medium text-ink-500">{client.testimonial_author}</p>
+        </div>
+      )}
+
+      {hasContact && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Kontak PIC</p>
+          <div className="mt-1.5 space-y-1">
+            {client.contact_name && (
+              <p className="text-sm text-ink-900">
+                {client.contact_name}
+                {client.contact_position && <span className="text-ink-500"> · {client.contact_position}</span>}
+              </p>
+            )}
+            {client.contact_email && (
+              <p className="flex items-center gap-1.5 text-xs text-ink-500">
+                <Mail className="h-3.5 w-3.5" />
+                {client.contact_email}
+              </p>
+            )}
+            {client.contact_phone && (
+              <p className="flex items-center gap-1.5 text-xs text-ink-500">
+                <Phone className="h-3.5 w-3.5" />
+                {client.contact_phone}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Dibuat: {new Date(client.created_at).toLocaleString("id-ID")}</p>
+        <p>Diperbarui: {new Date(client.updated_at).toLocaleString("id-ID")}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Klien
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

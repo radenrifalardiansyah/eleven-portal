@@ -1,5 +1,21 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { formatPrice } from "@/lib/currency";
+import {
+  packageDiscountLabel,
+  packageFinalPrice,
+  packagePriceSummary,
+  type ProductPackage,
+} from "@/lib/cms/product-packages";
+
+export type PublicPackage = {
+  id: string;
+  name: string;
+  price: string;
+  priceAmount: number;
+  originalPrice: string | null;
+  discountLabel: string | null;
+  description: string;
+};
 
 export type PublicProduct = {
   slug: string;
@@ -8,6 +24,7 @@ export type PublicProduct = {
   price: string;
   priceAmount: number;
   priceCurrency: string;
+  packages: PublicPackage[];
   description: string;
   longDescription: string;
   features: string[];
@@ -16,14 +33,14 @@ export type PublicProduct = {
 };
 
 const SELECT_COLUMNS =
-  "slug, name, service_id, price_amount, price_currency, description, long_description, features, gallery, image";
+  "slug, name, service_id, price_currency, packages, description, long_description, features, gallery, image";
 
 type ProductRow = {
   slug: string;
   name: string;
   service_id: string;
-  price_amount: number;
   price_currency: string;
+  packages: ProductPackage[];
   description: string;
   long_description: string;
   features: string[];
@@ -31,14 +48,31 @@ type ProductRow = {
   image: string;
 };
 
+function toPublicPackage(pkg: ProductPackage, currency: string): PublicPackage {
+  const finalPrice = packageFinalPrice(pkg);
+  const hasDiscount = finalPrice < pkg.price_amount;
+  return {
+    id: pkg.id,
+    name: pkg.name,
+    price: formatPrice(finalPrice, currency),
+    priceAmount: finalPrice,
+    originalPrice: hasDiscount ? formatPrice(pkg.price_amount, currency) : null,
+    discountLabel: packageDiscountLabel(pkg, currency),
+    description: pkg.description,
+  };
+}
+
 function toPublicProduct(row: ProductRow, serviceTitle: string): PublicProduct {
+  const packages = row.packages ?? [];
+  const lowestPrice = packages.length > 0 ? Math.min(...packages.map(packageFinalPrice)) : 0;
   return {
     slug: row.slug,
     name: row.name,
     category: serviceTitle,
-    price: formatPrice(row.price_amount, row.price_currency),
-    priceAmount: row.price_amount,
+    price: packagePriceSummary(packages, row.price_currency),
+    priceAmount: lowestPrice,
     priceCurrency: row.price_currency,
+    packages: packages.map((pkg) => toPublicPackage(pkg, row.price_currency)),
     description: row.description,
     longDescription: row.long_description,
     features: row.features,

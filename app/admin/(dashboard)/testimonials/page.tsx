@@ -17,33 +17,53 @@ export default async function AdminTestimonialsPage() {
   const canViewSection = can(profile.permissions, "page_sections", "view");
   const canEditSection = can(profile.permissions, "page_sections", "edit");
 
-  let sectionContent: Record<string, string> = {};
+  let logosSectionContent: Record<string, string> = {};
+  let quotesSectionContent: Record<string, string> = {};
   if (canViewSection) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("page_sections")
-      .select("content")
+      .select("section_key, content")
       .eq("page_key", "home")
-      .eq("section_key", "testimonials_header")
-      .maybeSingle();
-    sectionContent = (data?.content as Record<string, string>) ?? {};
+      .in("section_key", ["testimonials_header", "testimonial_quotes_header"]);
+    for (const row of data ?? []) {
+      const content = (row.content as Record<string, string>) ?? {};
+      if (row.section_key === "testimonials_header") logosSectionContent = content;
+      if (row.section_key === "testimonial_quotes_header") quotesSectionContent = content;
+    }
   }
 
   return (
     <div className="space-y-6">
       {canViewSection && (
-        <SectionContentCard
-          pageKey="home"
-          sectionKey="testimonials_header"
-          title="Judul & Deskripsi Section"
-          description="Teks yang tampil di homepage sebelum logo klien"
-          fields={[
-            { key: "eyebrow", label: "Eyebrow" },
-            { key: "title", label: "Judul" },
-          ]}
-          initialContent={sectionContent}
-          canEdit={canEditSection}
-        />
+        <>
+          <SectionContentCard
+            pageKey="home"
+            sectionKey="testimonials_header"
+            title="Judul & Deskripsi Section — Logo Klien"
+            description="Teks yang tampil di homepage sebelum logo klien"
+            fields={[
+              { key: "eyebrow", label: "Eyebrow" },
+              { key: "title", label: "Judul" },
+              { key: "description", label: "Deskripsi", type: "textarea" },
+            ]}
+            initialContent={logosSectionContent}
+            canEdit={canEditSection}
+          />
+          <SectionContentCard
+            pageKey="home"
+            sectionKey="testimonial_quotes_header"
+            title="Judul & Deskripsi Section — Kutipan Testimoni"
+            description="Teks yang tampil di homepage sebelum kutipan testimoni klien"
+            fields={[
+              { key: "eyebrow", label: "Eyebrow" },
+              { key: "title", label: "Judul" },
+              { key: "description", label: "Deskripsi", type: "textarea" },
+            ]}
+            initialContent={quotesSectionContent}
+            canEdit={canEditSection}
+          />
+        </>
       )}
 
       <TestimonialsClient

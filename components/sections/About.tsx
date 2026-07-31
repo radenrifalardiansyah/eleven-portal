@@ -6,7 +6,19 @@ import Reveal from "@/components/ui/Reveal";
 import MagneticButton from "@/components/ui/MagneticButton";
 import TiltCard from "@/components/ui/TiltCard";
 
-export default function About() {
+export default function About({
+  eyebrow = "Creative",
+  title = "Kenapa Memilih Eleven Digital Indonesia",
+  ctaLabel = "Pelajari Lebih Lanjut",
+  ctaHref = "#services",
+  image = "/images/svg/celebration.svg",
+}: {
+  eyebrow?: string;
+  title?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  image?: string;
+}) {
   return (
     <section id="about" className="relative overflow-hidden bg-brand-paper py-28">
       <div
@@ -25,7 +37,7 @@ export default function About() {
               className="relative h-full w-full"
             >
               <Image
-                src="/images/svg/celebration.svg"
+                src={image}
                 alt="Why we are different"
                 fill
                 className="object-contain"
@@ -36,11 +48,11 @@ export default function About() {
 
         <div>
           <span className="mb-4 inline-block text-xs font-semibold uppercase tracking-[0.3em] text-brand-blue">
-            Creative
+            {eyebrow}
           </span>
           <Reveal>
             <h2 className="font-heading text-3xl font-semibold leading-tight text-ink-900 sm:text-4xl">
-              Kenapa Memilih Eleven Digital Indonesia
+              {title}
             </h2>
           </Reveal>
           <Reveal delay={0.1}>
@@ -52,7 +64,7 @@ export default function About() {
           </Reveal>
           <Reveal delay={0.2}>
             <div className="mt-8">
-              <MagneticButton href="#services">Pelajari Lebih Lanjut</MagneticButton>
+              <MagneticButton href={ctaHref}>{ctaLabel}</MagneticButton>
             </div>
           </Reveal>
         </div>

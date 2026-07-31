@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import clsx from "clsx";
 import type { PortalNavLink } from "@/lib/cms/public-menu";
+import { trackEvent } from "@/lib/analytics/track";
 
 export default function NavbarClient({
   navLinks,
@@ -96,6 +97,7 @@ export default function NavbarClient({
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => trackEvent({ eventType: "menu_click", path: pathname, label: link.label, href: link.href })}
                 className={clsx(
                   "relative text-sm font-medium tracking-wide transition-colors",
                   active === link.href ? "text-brand-ink" : "text-brand-ink/50 hover:text-brand-ink"
@@ -114,6 +116,7 @@ export default function NavbarClient({
 
           <Link
             href="/#contact"
+            onClick={() => trackEvent({ eventType: "menu_click", path: pathname, label: "Contact Us", href: "/#contact" })}
             className="hidden rounded-full bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105 md:inline-flex"
           >
             Contact Us
@@ -142,7 +145,10 @@ export default function NavbarClient({
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  trackEvent({ eventType: "menu_click", path: pathname, label: link.label, href: link.href });
+                  setOpen(false);
+                }}
                 className="rounded-lg px-3 py-3 text-sm font-medium text-brand-ink/80 transition-colors hover:bg-black/5 hover:text-brand-ink"
               >
                 {link.label}

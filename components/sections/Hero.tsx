@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import MagneticButton from "@/components/ui/MagneticButton";
+import { isVideoUrl } from "@/lib/media";
 
 const container = {
   hidden: {},
@@ -14,7 +15,27 @@ const item = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
-export default function Hero() {
+export default function Hero({
+  eyebrow = "Digital Creative Agency",
+  titlePrefix = "Wujudkan ",
+  titleHighlight = "transformasi digital",
+  titleSuffix = " bisnis Anda.",
+  ctaLabel = "Mulai Sekarang",
+  ctaHref = "#contact",
+  secondaryLabel = "Lihat portofolio kami",
+  secondaryHref = "#case-study",
+  image = "/images/cover-illustration.png",
+}: {
+  eyebrow?: string;
+  titlePrefix?: string;
+  titleHighlight?: string;
+  titleSuffix?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+  image?: string;
+}) {
   return (
     <section
       id="home"
@@ -41,18 +62,18 @@ export default function Hero() {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-blue/15 bg-brand-blue/5 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-brand-ink/70 backdrop-blur"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-brand-yellow" />
-            Digital Creative Agency
+            {eyebrow}
           </motion.span>
 
           <motion.h1
             variants={item}
             className="font-heading text-4xl font-semibold leading-[1.1] text-ink-900 sm:text-5xl lg:text-6xl"
           >
-            Wujudkan{" "}
+            {titlePrefix}
             <span className="bg-brand-gradient bg-clip-text text-transparent text-glow">
-              transformasi digital
-            </span>{" "}
-            bisnis Anda.
+              {titleHighlight}
+            </span>
+            {titleSuffix}
           </motion.h1>
 
           <motion.p variants={item} className="mt-6 max-w-md text-lg text-brand-ink/70">
@@ -61,12 +82,12 @@ export default function Hero() {
           </motion.p>
 
           <motion.div variants={item} className="mt-10 flex items-center gap-4">
-            <MagneticButton href="#contact">Mulai Sekarang</MagneticButton>
+            <MagneticButton href={ctaHref}>{ctaLabel}</MagneticButton>
             <a
-              href="#case-study"
+              href={secondaryHref}
               className="text-sm font-semibold text-brand-ink/70 underline-offset-4 transition-colors hover:text-brand-blue hover:underline"
             >
-              Lihat portofolio kami
+              {secondaryLabel}
             </a>
           </motion.div>
         </motion.div>
@@ -77,13 +98,24 @@ export default function Hero() {
           transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
           className="relative hidden aspect-square lg:block"
         >
-          <Image
-            src="/images/cover-illustration.png"
-            alt="Illustration of a team building a digital product"
-            fill
-            className="relative object-contain"
-            priority
-          />
+          {isVideoUrl(image) ? (
+            <video
+              src={image}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="relative h-full w-full object-contain"
+            />
+          ) : (
+            <Image
+              src={image}
+              alt="Illustration of a team building a digital product"
+              fill
+              className="relative object-contain"
+              priority
+            />
+          )}
         </motion.div>
       </div>
 

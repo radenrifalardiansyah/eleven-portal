@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown, Instagram, Facebook, Twitter } from "lucide-react";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
@@ -299,6 +299,13 @@ export default function TeamClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari anggota tim..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(member) => (
+          <TeamMemberDetail
+            member={member}
+            canEdit={canEdit}
+            onEdit={() => setFormModal({ mode: "edit", member })}
+          />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -422,5 +429,99 @@ export default function TeamClient({
         onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
+  );
+}
+
+function TeamMemberDetail({
+  member,
+  canEdit,
+  onEdit,
+}: {
+  member: TeamMember;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const socials = member.socials;
+  const hasSocials = socials.instagram || socials.facebook || socials.twitter;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <TeamAvatar name={member.name} photoUrl={member.photo_url} className="h-14 w-14 rounded-xl" />
+        <div>
+          <p className="font-heading text-sm font-semibold text-ink-900">{member.name}</p>
+          <p className="text-xs text-brand-blue">{member.position}</p>
+        </div>
+        <StatusBadge status={member.status} />
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Bio Singkat</p>
+        <p className="mt-1 text-sm text-ink-900">{member.bio}</p>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Bio Lengkap</p>
+        <p className="mt-1 whitespace-pre-line text-sm text-ink-900">{member.long_bio}</p>
+      </div>
+
+      {hasSocials && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Sosial Media</p>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {socials.instagram && (
+              <a
+                href={socials.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700 hover:bg-ink-900/10"
+              >
+                <Instagram className="h-3.5 w-3.5" />
+                Instagram
+              </a>
+            )}
+            {socials.facebook && (
+              <a
+                href={socials.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700 hover:bg-ink-900/10"
+              >
+                <Facebook className="h-3.5 w-3.5" />
+                Facebook
+              </a>
+            )}
+            {socials.twitter && (
+              <a
+                href={socials.twitter}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700 hover:bg-ink-900/10"
+              >
+                <Twitter className="h-3.5 w-3.5" />
+                Twitter
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Dibuat: {new Date(member.created_at).toLocaleString("id-ID")}</p>
+        <p>Diperbarui: {new Date(member.updated_at).toLocaleString("id-ID")}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Anggota
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

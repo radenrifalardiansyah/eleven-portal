@@ -7,9 +7,9 @@ export const getPortalNavLinks = cache(async (): Promise<PortalNavLink[]> => {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("menu_items")
-    .select("label, portal_label, portal_href, portal_match_path, portal_sort_order")
+    .select("label, portal_label, portal_href, portal_match_path, sort_order")
     .eq("show_on_portal", true)
-    .order("portal_sort_order");
+    .order("sort_order");
   if (error) throw new Error(error.message);
 
   return (data ?? [])
@@ -19,4 +19,20 @@ export const getPortalNavLinks = cache(async (): Promise<PortalNavLink[]> => {
       href: row.portal_href as string,
       matchPath: row.portal_match_path ?? undefined,
     }));
+});
+
+/** Module keys of visible homepage sections, in the same order as the
+ *  admin sidebar (sort_order) — reordering in Struktur Menu keeps the
+ *  admin sidebar, Hak Akses Role, the public navbar, and the homepage
+ *  sections all consistent with each other. */
+export const getVisibleHomeSections = cache(async (): Promise<string[]> => {
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("module_key")
+    .eq("show_section_on_portal", true)
+    .is("parent_id", null)
+    .order("sort_order");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.module_key);
 });

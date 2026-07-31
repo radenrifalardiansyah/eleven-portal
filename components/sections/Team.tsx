@@ -8,19 +8,35 @@ import TeamAvatar from "@/components/ui/TeamAvatar";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
 import type { PublicTeamMember } from "@/lib/cms/public-team";
 
-export default function Team({ team }: { team: PublicTeamMember[] }) {
+export default function Team({
+  team,
+  eyebrow = "Team",
+  title = "Kenali Board of Directors Kami",
+  description = "Tim inti yang mengarahkan visi dan kualitas kerja di balik setiap proyek Eleven Digital Indonesia.",
+  ctaLabel = "Lihat Semua Tim",
+}: {
+  team: PublicTeamMember[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
+}) {
   const featured = team.slice(0, 4);
+  const gridColsClass =
+    featured.length >= 4
+      ? "sm:grid-cols-2 lg:grid-cols-4"
+      : featured.length === 3
+        ? "sm:grid-cols-2 lg:grid-cols-3"
+        : featured.length === 2
+          ? "sm:grid-cols-2"
+          : "sm:grid-cols-1";
 
   return (
     <section id="team" className="relative bg-brand-paper py-28">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle
-          eyebrow="Team"
-          title="Kenali Board of Directors Kami"
-          description="Tim inti yang mengarahkan visi dan kualitas kerja di balik setiap proyek Eleven Digital Indonesia."
-        />
+        <SectionTitle eyebrow={eyebrow} title={title} description={description} />
 
-        <RevealGroup className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup className={`grid grid-cols-1 gap-6 ${gridColsClass} justify-center`}>
           {featured.map((member) => (
             <RevealItem key={member.slug}>
               <Link href={`/team/${member.slug}`} data-cursor-hover>
@@ -51,7 +67,7 @@ export default function Team({ team }: { team: PublicTeamMember[] }) {
             data-cursor-hover
             className="inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
           >
-            Lihat Semua Tim
+            {ctaLabel}
             <ArrowRight size={16} />
           </Link>
         </div>

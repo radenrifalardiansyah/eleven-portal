@@ -2,14 +2,26 @@ import type { Product } from "@/lib/cms/products";
 import type { ProductImportRow } from "@/app/admin/(dashboard)/products/actions";
 import { exportImportTemplate, type TemplateColumn } from "@/lib/excel";
 import { isCurrencyCode } from "@/lib/currency";
+import type { PackageDiscountType, ProductPackage } from "@/lib/cms/product-packages";
+
+const DISCOUNT_LABEL: Record<PackageDiscountType, string> = {
+  none: "Tanpa",
+  percent: "Persen",
+  amount: "Nominal",
+};
+const DISCOUNT_FROM_LABEL: Record<string, PackageDiscountType> = {
+  tanpa: "none",
+  persen: "percent",
+  nominal: "amount",
+};
 
 export function productToExcelRow(p: Product) {
   return {
     Slug: p.slug,
     Nama: p.name,
     Layanan: p.serviceTitle,
-    Harga: p.price_amount,
     "Mata Uang": p.price_currency,
+    "Paket Harga": packagesToExcelValue(p.packages),
     "Deskripsi Singkat": p.description,
     "Deskripsi Lengkap": p.long_description,
     Fitur: p.features.join(" | "),
@@ -35,8 +47,8 @@ export function excelRowToProductImportRow(row: Record<string, string>): Product
     slug,
     name,
     service: row["Layanan"]?.trim() ?? "",
-    price_amount: Number(row["Harga"]) || 0,
     price_currency,
+    packages: excelValueToPackages(row["Paket Harga"]),
     description: row["Deskripsi Singkat"]?.trim() ?? "",
     long_description: row["Deskripsi Lengkap"]?.trim() ?? "",
     features: splitList(row["Fitur"]),
@@ -53,6 +65,34 @@ function splitList(value: string | undefined): string[] {
     .split("|")
     .map((v) => v.trim())
     .filter(Boolean);
+}
+
+function packagesToExcelValue(packages: ProductPackage[]): string {
+  return packages
+    .map((p) =>
+      [p.name, p.price_amount, DISCOUNT_LABEL[p.discount_type], p.discount_value, p.description].join("|")
+    )
+    .join(" ; ");
+}
+
+function excelValueToPackages(value: string | undefined): ProductPackage[] {
+  if (!value) return [];
+  return value
+    .split(";")
+    .map((chunk) => {
+      const [name = "", price = "0", discountLabel = "Tanpa", discountValue = "0", ...descParts] = chunk
+        .split("|")
+        .map((v) => v.trim());
+      return {
+        id: crypto.randomUUID(),
+        name,
+        price_amount: Number(price) || 0,
+        discount_type: DISCOUNT_FROM_LABEL[discountLabel.toLowerCase()] ?? "none",
+        discount_value: Number(discountValue) || 0,
+        description: descParts.join("|").trim(),
+      };
+    })
+    .filter((p) => p.name);
 }
 
 const PRODUCT_TEMPLATE_COLUMNS: TemplateColumn[] = [
@@ -72,14 +112,15 @@ const PRODUCT_TEMPLATE_COLUMNS: TemplateColumn[] = [
     note: "Nama layanan yang sudah ada di menu Layanan, harus sama persis, contoh: Web Development, Graphic Design.",
   },
   {
-    header: "Harga",
-    example: "3500000",
-    note: "Wajib berupa angka saja (tanpa Rp, tanpa titik/koma pemisah ribuan), contoh: 3500000.",
-  },
-  {
     header: "Mata Uang",
     example: "IDR",
-    note: "Isi salah satu: IDR, USD, SGD, EUR, atau MYR. Boleh dikosongkan (default IDR).",
+    note: "Isi salah satu: IDR, USD, SGD, EUR, atau MYR. Boleh dikosongkan (default IDR). Berlaku untuk semua paket harga produk ini.",
+  },
+  {
+    header: "Paket Harga",
+    example: "Paket Basic|3500000|Tanpa|0|Cocok untuk UMKM ; Paket Pro|7500000|Persen|10|Untuk bisnis menengah",
+    note:
+      "Wajib diisi minimal 1 paket. Format tiap paket: Nama|Harga|TipeDiskon|NilaiDiskon|Keterangan, dipisah tanda | (pipe). TipeDiskon isi salah satu: Tanpa, Persen, atau Nominal. Jika lebih dari 1 paket, pisahkan tiap paket dengan tanda ; (titik koma). Contoh: Paket Basic|3500000|Tanpa|0|Cocok untuk UMKM ; Paket Pro|7500000|Persen|10|Untuk bisnis menengah",
   },
   {
     header: "Deskripsi Singkat",

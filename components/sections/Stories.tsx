@@ -10,7 +10,19 @@ import TiltCard from "@/components/ui/TiltCard";
 import Reveal from "@/components/ui/Reveal";
 import type { PublicStory } from "@/lib/cms/public-stories";
 
-export default function Stories({ stories }: { stories: PublicStory[] }) {
+export default function Stories({
+  stories,
+  eyebrow = "Stories",
+  title = "Stories",
+  description = "Wawasan seputar desain, teknologi, dan kreativitas dari tim Eleven Digital Indonesia untuk membantu bisnis Anda terus berkembang.",
+  ctaLabel = "Lihat Semua Stories",
+}: {
+  stories: PublicStory[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
+}) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selected, setSelected] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
@@ -35,18 +47,15 @@ export default function Stories({ stories }: { stories: PublicStory[] }) {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-6 lg:grid-cols-[1fr_2fr]">
         <div>
           <span className="mb-4 inline-block text-xs font-semibold uppercase tracking-[0.3em] text-brand-blue">
-            Stories
+            {eyebrow}
           </span>
           <Reveal>
             <h2 className="font-heading text-3xl font-semibold leading-tight text-ink-900 sm:text-4xl">
-              Stories
+              {title}
             </h2>
           </Reveal>
           <Reveal delay={0.1}>
-            <p className="mt-6 max-w-sm text-base leading-relaxed text-brand-ink/70">
-              Wawasan seputar desain, teknologi, dan kreativitas dari tim Eleven Digital Indonesia
-              untuk membantu bisnis Anda terus berkembang.
-            </p>
+            <p className="mt-6 max-w-sm text-base leading-relaxed text-brand-ink/70">{description}</p>
           </Reveal>
 
           <div className="mt-8 hidden items-center gap-3 lg:flex">
@@ -72,7 +81,7 @@ export default function Stories({ stories }: { stories: PublicStory[] }) {
               data-cursor-hover
               className="inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
             >
-              Lihat Semua Stories
+              {ctaLabel}
               <ArrowRight size={16} />
             </Link>
           </div>
@@ -149,7 +158,7 @@ export default function Stories({ stories }: { stories: PublicStory[] }) {
               data-cursor-hover
               className="inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
             >
-              Lihat Semua Stories
+              {ctaLabel}
               <ArrowRight size={16} />
             </Link>
           </div>

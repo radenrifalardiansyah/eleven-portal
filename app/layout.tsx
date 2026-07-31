@@ -94,12 +94,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { contact, branding } = await getSiteSettings();
+  const { contact, branding, company } = await getSiteSettings();
 
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
-    name: siteConfig.name,
+    name: company.brandName || siteConfig.name,
+    legalName: company.legalName || undefined,
     url: siteConfig.url,
     logo: branding.logoUrl || absoluteUrl("/images/logo-eleven.png"),
     image: absoluteUrl(siteConfig.ogImage),

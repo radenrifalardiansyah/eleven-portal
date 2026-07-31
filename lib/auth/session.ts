@@ -54,10 +54,20 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
 
   if (roleRow?.is_super_admin) {
     // Super Admin always has full access to every module, including ones
-    // added after this profile's role_permissions rows were last seeded.
-    const fullAccess: ModulePermission = { view: true, edit: true, delete: true, approve: true, publish: true };
+    // added after this profile's role_permissions rows were last seeded —
+    // except "publish" ("Tampil di Portal" in Hak Akses Role), which is a
+    // real, editable permission for Super Admin too (same as Admin), so it
+    // reads from role_permissions like every other role. Defaults to true
+    // for modules with no row yet, matching the previous always-on behavior.
+    const publishByModule = new Map((permissionRows ?? []).map((row) => [row.module_key, row.can_publish]));
     for (const row of moduleRows ?? []) {
-      permissions[row.key] = fullAccess;
+      permissions[row.key] = {
+        view: true,
+        edit: true,
+        delete: true,
+        approve: true,
+        publish: publishByModule.get(row.key) ?? true,
+      };
     }
   } else {
     for (const row of permissionRows ?? []) {

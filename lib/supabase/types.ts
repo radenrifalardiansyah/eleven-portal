@@ -1,4 +1,5 @@
 import type { CurrencyCode } from "@/lib/currency";
+import type { ProductPackage } from "@/lib/cms/product-packages";
 
 // Roles are master data (see the `roles` table / lib/cms/roles.ts) and can grow at
 // runtime via the Role admin page, so this stays a plain string rather than a
@@ -54,8 +55,8 @@ export type Database = {
         ContentRow & {
           name: string;
           service_id: string;
-          price_amount: number;
           price_currency: CurrencyCode;
+          packages: ProductPackage[];
           description: string;
           long_description: string;
           features: string[];
@@ -154,10 +155,10 @@ export type Database = {
         always_visible: boolean;
         show_bottom_nav: boolean;
         show_on_portal: boolean;
+        show_section_on_portal: boolean;
         portal_href: string | null;
         portal_match_path: string | null;
         portal_label: string | null;
-        portal_sort_order: number;
         created_at: string;
         updated_at: string;
       }>;
@@ -205,6 +206,32 @@ export type Database = {
         },
         { user_id: string; user_agent?: string | null }
       >;
+      analytics_events: Table<
+        {
+          id: string;
+          event_type: "pageview" | "menu_click";
+          path: string;
+          label: string | null;
+          href: string | null;
+          referrer: string | null;
+          device_type: "desktop" | "mobile" | "tablet";
+          browser: string | null;
+          session_id: string;
+          user_agent: string | null;
+          created_at: string;
+        },
+        {
+          event_type: "pageview" | "menu_click";
+          path: string;
+          label?: string | null;
+          href?: string | null;
+          referrer?: string | null;
+          device_type: "desktop" | "mobile" | "tablet";
+          browser?: string | null;
+          session_id: string;
+          user_agent?: string | null;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -215,6 +242,34 @@ export type Database = {
       upsert_module: {
         Args: { p_key: string; p_label: string };
         Returns: void;
+      };
+      analytics_kpis: {
+        Args: { p_since: string };
+        Returns: { total_pageviews: number; unique_visitors: number; total_menu_clicks: number }[];
+      };
+      analytics_timeseries: {
+        Args: { p_granularity: "day" | "week" | "month" | "year"; p_since: string };
+        Returns: { bucket: string; pageviews: number; unique_visitors: number }[];
+      };
+      analytics_device_breakdown: {
+        Args: { p_since: string };
+        Returns: { device_type: string; total: number }[];
+      };
+      analytics_browser_breakdown: {
+        Args: { p_since: string };
+        Returns: { browser: string; total: number }[];
+      };
+      analytics_top_pages: {
+        Args: { p_since: string; p_limit: number };
+        Returns: { path: string; total: number }[];
+      };
+      analytics_top_menu_clicks: {
+        Args: { p_since: string; p_limit: number };
+        Returns: { label: string; total: number }[];
+      };
+      analytics_top_referrers: {
+        Args: { p_since: string; p_limit: number };
+        Returns: { referrer_host: string; total: number }[];
       };
     };
   };

@@ -217,7 +217,12 @@ export default function MenuClient({
                         )}
                         {item.show_on_portal && (
                           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                            Tampil di Portal
+                            Tampil di Menu
+                          </span>
+                        )}
+                        {!item.show_section_on_portal && (
+                          <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
+                            Section Disembunyikan
                           </span>
                         )}
                       </div>

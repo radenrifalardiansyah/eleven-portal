@@ -62,6 +62,7 @@ export default async function ProductDetailPage({
     `Halo, saya tertarik dengan produk "${product.name}". Bisa minta info lebih lanjut?`
   )}`;
 
+  const packagePrices = product.packages.map((pkg) => pkg.priceAmount);
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -70,14 +71,28 @@ export default async function ProductDetailPage({
     image: absoluteUrl(product.image),
     category: product.category,
     brand: { "@type": "Brand", name: siteConfig.name },
-    offers: {
-      "@type": "Offer",
-      url: absoluteUrl(`/products/${product.slug}`),
-      priceCurrency: product.priceCurrency,
-      price: product.priceAmount,
-      availability: "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: siteConfig.name },
-    },
+    offers:
+      packagePrices.length > 1
+        ? {
+            "@type": "AggregateOffer",
+            url: absoluteUrl(`/products/${product.slug}`),
+            priceCurrency: product.priceCurrency,
+            lowPrice: Math.min(...packagePrices),
+            highPrice: Math.max(...packagePrices),
+            offerCount: packagePrices.length,
+            availability: "https://schema.org/InStock",
+            seller: { "@type": "Organization", name: siteConfig.name },
+          }
+        : packagePrices.length === 1
+          ? {
+              "@type": "Offer",
+              url: absoluteUrl(`/products/${product.slug}`),
+              priceCurrency: product.priceCurrency,
+              price: packagePrices[0],
+              availability: "https://schema.org/InStock",
+              seller: { "@type": "Organization", name: siteConfig.name },
+            }
+          : undefined,
   };
 
   const breadcrumb = breadcrumbJsonLd([
@@ -151,6 +166,58 @@ export default async function ProductDetailPage({
                 </div>
               </FadeIn>
             </div>
+
+            {product.packages.length > 1 && (
+              <FadeIn>
+                <div className="mt-20">
+                  <h2 className="font-heading text-xl font-semibold text-ink-900">Pilih Paket</h2>
+                  <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {product.packages.map((pkg) => {
+                      const pkgWhatsappHref = `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(
+                        `Halo, saya tertarik dengan produk "${product.name}" paket "${pkg.name}" (${pkg.price}). Bisa minta info lebih lanjut?`
+                      )}`;
+                      return (
+                        <TiltCard
+                          key={pkg.id}
+                          strength={8}
+                          className="flex h-full flex-col rounded-2xl border border-black/5 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.06)]"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-heading text-lg font-semibold text-ink-900">{pkg.name}</h3>
+                            {pkg.discountLabel && (
+                              <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">
+                                {pkg.discountLabel}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-3 flex items-baseline gap-2">
+                            <p className="font-heading text-xl font-semibold text-brand-blue">{pkg.price}</p>
+                            {pkg.originalPrice && (
+                              <p className="text-sm text-brand-ink/40 line-through">{pkg.originalPrice}</p>
+                            )}
+                          </div>
+                          {pkg.description && (
+                            <p className="mt-3 flex-1 text-sm leading-relaxed text-brand-ink/60">
+                              {pkg.description}
+                            </p>
+                          )}
+                          <a
+                            href={pkgWhatsappHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            data-cursor-hover
+                            className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-brand-gradient px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
+                          >
+                            <MessageCircle size={16} />
+                            Pesan Paket Ini
+                          </a>
+                        </TiltCard>
+                      );
+                    })}
+                  </div>
+                </div>
+              </FadeIn>
+            )}
 
             <FadeIn>
               <div className="mt-20 max-w-3xl">

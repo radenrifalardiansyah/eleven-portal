@@ -12,7 +12,17 @@ const fields = [
   { name: "email", label: "Email", type: "email" },
 ];
 
-export default function Contact() {
+export default function Contact({
+  eyebrow = "Contact",
+  title = "Punya Proyek Digital?",
+  submitLabel = "Send Message",
+  image = "/images/svg/contact-us.svg",
+}: {
+  eyebrow?: string;
+  title?: string;
+  submitLabel?: string;
+  image?: string;
+}) {
   const [focused, setFocused] = useState<string | null>(null);
 
   return (
@@ -23,8 +33,8 @@ export default function Contact() {
       />
       <div className="mx-auto max-w-6xl px-6">
         <SectionTitle
-          eyebrow="Contact"
-          title="Punya Proyek Digital?"
+          eyebrow={eyebrow}
+          title={title}
           description="Ceritakan kebutuhan bisnis Anda dan tim kami akan membantu menemukan solusi digital yang tepat."
         />
 
@@ -66,7 +76,7 @@ export default function Contact() {
                 />
               </div>
               <MagneticButton as="button" type="button" className="mt-2 cursor-pointer">
-                Send Message
+                {submitLabel}
               </MagneticButton>
             </form>
           </Reveal>
@@ -79,7 +89,7 @@ export default function Contact() {
                 className="relative h-full w-full"
               >
                 <Image
-                  src="/images/svg/contact-us.svg"
+                  src={image}
                   alt="Contact us"
                   fill
                   className="object-contain"

@@ -9,6 +9,7 @@ import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import Modal from "@/components/admin/Modal";
+import ImageLightbox from "@/components/admin/ImageLightbox";
 import ExcelActions from "@/components/admin/ExcelActions";
 import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
@@ -27,6 +28,7 @@ import { exportRowsToExcel, parseExcelFile } from "@/lib/excel";
 import type { Product } from "@/lib/cms/products";
 import type { Service } from "@/lib/cms/services";
 import { formatPrice } from "@/lib/currency";
+import { packageDiscountLabel, packageFinalPrice, packagePriceSummary } from "@/lib/cms/product-packages";
 
 type FormModalState = { mode: "create" } | { mode: "edit"; product: Product } | null;
 
@@ -200,7 +202,7 @@ export default function ProductsClient({
       {
         id: "price",
         header: "Harga",
-        cell: ({ row }) => formatPrice(row.original.price_amount, row.original.price_currency),
+        cell: ({ row }) => packagePriceSummary(row.original.packages, row.original.price_currency),
       },
       {
         accessorKey: "status",
@@ -214,7 +216,7 @@ export default function ProductsClient({
         cell: ({ row }) => {
           const position = products.findIndex((p) => p.id === row.original.id);
           return (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
               {canEdit && (
                 <div className="flex items-center gap-1">
                   <span className="text-ink-500">#{position + 1}</span>
@@ -313,6 +315,13 @@ export default function ProductsClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari produk..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(product) => (
+          <ProductDetail
+            product={product}
+            canEdit={canEdit}
+            onEdit={() => setFormModal({ mode: "edit", product })}
+          />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -349,7 +358,7 @@ export default function ProductsClient({
                 <CategoryBadge label={product.serviceTitle} />
               </div>
               <p className="mt-2 text-sm font-semibold text-brand-blue">
-                {formatPrice(product.price_amount, product.price_currency)}
+                {packagePriceSummary(product.packages, product.price_currency)}
               </p>
               {canEdit && <p className="mt-1 text-xs text-ink-500">Urutan #{position + 1}</p>}
             </div>
@@ -442,6 +451,137 @@ export default function ProductsClient({
         onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
+  );
+}
+
+function ProductDetail({
+  product,
+  canEdit,
+  onEdit,
+}: {
+  product: Product;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const images = [product.image, ...product.gallery].filter(Boolean);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={product.status} />
+        <CategoryBadge label={product.serviceTitle} />
+        <span className="text-sm font-semibold text-brand-blue">
+          {packagePriceSummary(product.packages, product.price_currency)}
+        </span>
+      </div>
+
+      {product.packages.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Paket Harga</p>
+          <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {product.packages.map((pkg) => {
+              const finalPrice = packageFinalPrice(pkg);
+              const discountLabel = packageDiscountLabel(pkg, product.price_currency);
+              return (
+                <div key={pkg.id} className="rounded-xl border border-ink-900/10 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-ink-900">{pkg.name}</p>
+                    {discountLabel && (
+                      <span className="rounded-lg bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                        {discountLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <p className="text-sm font-semibold text-brand-blue">
+                      {formatPrice(finalPrice, product.price_currency)}
+                    </p>
+                    {finalPrice < pkg.price_amount && (
+                      <p className="text-xs text-ink-400 line-through">
+                        {formatPrice(pkg.price_amount, product.price_currency)}
+                      </p>
+                    )}
+                  </div>
+                  {pkg.description && <p className="mt-1 text-xs text-ink-500">{pkg.description}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          {images.map((src, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPreviewIndex(i)}
+              className="group relative aspect-square overflow-hidden rounded-xl bg-ink-900/5"
+              aria-label={`Lihat foto ${i + 1}`}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                className="object-cover transition-transform group-hover:scale-105"
+                unoptimized
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {previewIndex !== null && (
+        <ImageLightbox
+          images={images}
+          index={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Singkat</p>
+        <p className="mt-1 text-sm text-ink-900">{product.description}</p>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Lengkap</p>
+        <p className="mt-1 whitespace-pre-line text-sm text-ink-900">{product.long_description}</p>
+      </div>
+
+      {product.features.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Fitur</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {product.features.map((feature, i) => (
+              <li key={i} className="rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700">
+                {feature}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Dibuat: {new Date(product.created_at).toLocaleString("id-ID")}</p>
+        <p>Diperbarui: {new Date(product.updated_at).toLocaleString("id-ID")}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Produk
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

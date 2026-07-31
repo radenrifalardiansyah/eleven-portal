@@ -118,18 +118,36 @@ export default function RolesClient({
 
   const roleUsers = useMemo(() => users.filter((u) => u.role === activeRole), [users, activeRole]);
   const isLocked = activeRole === "super_admin";
+  // "Tampil di Portal" (publish) may only be granted to Admin/Super Admin —
+  // other roles never get to publish content live, so the whole column is
+  // hidden while viewing them instead of showing a column full of dashes.
+  const canTogglePublish = activeRole === "admin" || activeRole === "super_admin";
+  const visibleActions = useMemo(
+    () => (canTogglePublish ? ACTIONS : ACTIONS.filter((a) => a.key !== "publish")),
+    [canTogglePublish]
+  );
 
   const publishableModules = useMemo(
     () => new Set(permissions.filter((p) => p.can_publish).map((p) => p.module_key)),
     [permissions]
   );
 
+  // Site Settings is the only module with no approve step at all (a single
+  // always-live settings object, not draft/pending/published content) — an
+  // explicit exclusion rather than inferring from current permission data,
+  // since Sistem modules (Users, Menu Struktur, Hak Akses Role) deliberately
+  // keep Approve toggleable even though it isn't wired up yet — an approval
+  // step is planned for them later.
+  const NO_APPROVE_MODULES = useMemo(() => new Set(["site_settings"]), []);
+
   const moduleKeysAll = useMemo(() => Array.from(new Set(items.map((i) => i.module_key))), [items]);
 
   const dirtyRows = useMemo(() => {
     const rows: PermissionRowPatch[] = [];
     for (const { key: role } of roles) {
-      if (role === "super_admin") continue;
+      // Super Admin's view/edit/delete/approve are permanently locked true
+      // (see getValue/toggle below) so they can never actually differ from
+      // what's saved — only can_publish can end up dirty for this role.
       for (const moduleKey of moduleKeysAll) {
         const cur = permState[role]?.[moduleKey];
         if (!cur) continue;
@@ -159,13 +177,21 @@ export default function RolesClient({
 
   const isDirty = dirtyRows.length > 0;
 
+  // Super Admin's view/edit/delete/approve stay permanently full — only
+  // publish ("Tampil di Portal") is a real, editable permission for this
+  // role too, since the portal itself is public and doesn't check roles;
+  // this only governs who's allowed to make content go live.
+  function isActionLocked(action: Action) {
+    return isLocked && action !== "publish";
+  }
+
   function getValue(moduleKey: string, action: Action) {
-    if (isLocked) return true;
+    if (isActionLocked(action)) return true;
     return permState[activeRole]?.[moduleKey]?.[action] ?? false;
   }
 
   function toggle(moduleKey: string, action: Action) {
-    if (isLocked) return;
+    if (isActionLocked(action)) return;
     const current = permState[activeRole]?.[moduleKey] ?? EMPTY_PERMISSION;
     const next = !current[action];
 
@@ -179,7 +205,7 @@ export default function RolesClient({
   }
 
   function toggleGroup(groupModuleKeys: string[], action: Action) {
-    if (isLocked) return;
+    if (isActionLocked(action)) return;
     const allChecked = groupModuleKeys.every((key) => getValue(key, action));
     const next = !allChecked;
 
@@ -257,8 +283,9 @@ export default function RolesClient({
 
       {isLocked && (
         <div className="rounded-2xl border border-brand-blue/20 bg-brand-blue/5 p-4 text-sm text-brand-blue">
-          Hak akses Super Admin selalu penuh dan tidak bisa diubah — ini mencegah semua orang kehilangan akses tanpa
-          sengaja.
+          View, Edit, Delete, dan Approve untuk Super Admin selalu penuh dan tidak bisa diubah — ini mencegah semua
+          orang kehilangan akses tanpa sengaja. Khusus &ldquo;Tampil di Portal&rdquo;, izinnya bisa diatur seperti role
+          lain.
         </div>
       )}
 
@@ -307,7 +334,7 @@ export default function RolesClient({
                 <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
                   Menu
                 </th>
-                {ACTIONS.map((a) => (
+                {visibleActions.map((a) => (
                   <th
                     key={a.key}
                     className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-ink-500"
@@ -342,8 +369,11 @@ export default function RolesClient({
                           {item.label}
                         </div>
                       </td>
-                      {ACTIONS.map((a) => {
-                        if (a.key === "publish" && !publishableModules.has(item.module_key)) {
+                      {visibleActions.map((a) => {
+                        if (
+                          (a.key === "publish" && !publishableModules.has(item.module_key)) ||
+                          (a.key === "approve" && NO_APPROVE_MODULES.has(item.module_key))
+                        ) {
                           return (
                             <td key={a.key} className="px-4 py-3 text-center text-ink-900/30">
                               —
@@ -354,7 +384,7 @@ export default function RolesClient({
                           <td key={a.key} className="px-4 py-3 text-center">
                             <input
                               type="checkbox"
-                              disabled={isLocked}
+                              disabled={a.key === "publish" ? false : isLocked}
                               checked={getValue(item.module_key, a.key)}
                               onChange={() => toggle(item.module_key, a.key)}
                               className="h-4 w-4 cursor-pointer rounded border-ink-900/20 accent-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
@@ -380,9 +410,13 @@ export default function RolesClient({
                           <span className="normal-case text-ink-500/70">({groupItems.length})</span>
                         </button>
                       </td>
-                      {ACTIONS.map((a) => {
+                      {visibleActions.map((a) => {
                         const applicableKeys =
-                          a.key === "publish" ? moduleKeys.filter((k) => publishableModules.has(k)) : moduleKeys;
+                          a.key === "publish"
+                            ? moduleKeys.filter((k) => publishableModules.has(k))
+                            : a.key === "approve"
+                              ? moduleKeys.filter((k) => !NO_APPROVE_MODULES.has(k))
+                              : moduleKeys;
                         if (applicableKeys.length === 0) {
                           return (
                             <td key={a.key} className="px-4 py-2 text-center text-ink-900/30">
@@ -394,7 +428,7 @@ export default function RolesClient({
                           <td key={a.key} className="px-4 py-2 text-center">
                             <input
                               type="checkbox"
-                              disabled={isLocked}
+                              disabled={a.key === "publish" ? false : isLocked}
                               checked={applicableKeys.every((key) => getValue(key, a.key))}
                               onChange={() => toggleGroup(applicableKeys, a.key)}
                               className="h-4 w-4 cursor-pointer rounded border-ink-900/20 accent-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
@@ -444,13 +478,17 @@ export default function RolesClient({
                     <span className="truncate">{item.label}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                    {ACTIONS.map((a) => {
-                      if (a.key === "publish" && !publishableModules.has(item.module_key)) return null;
+                    {visibleActions.map((a) => {
+                      if (
+                        (a.key === "publish" && !publishableModules.has(item.module_key)) ||
+                        (a.key === "approve" && NO_APPROVE_MODULES.has(item.module_key))
+                      )
+                        return null;
                       return (
                         <label key={a.key} className="flex items-center gap-1.5 text-xs text-ink-500">
                           <input
                             type="checkbox"
-                            disabled={isLocked}
+                            disabled={a.key === "publish" ? false : isLocked}
                             checked={getValue(item.module_key, a.key)}
                             onChange={() => toggle(item.module_key, a.key)}
                             className="h-4 w-4 shrink-0 cursor-pointer rounded border-ink-900/20 accent-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
@@ -477,15 +515,19 @@ export default function RolesClient({
                     <span className="normal-case text-ink-500/70">({groupItems.length})</span>
                   </button>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    {ACTIONS.map((a) => {
+                    {visibleActions.map((a) => {
                       const applicableKeys =
-                        a.key === "publish" ? moduleKeys.filter((k) => publishableModules.has(k)) : moduleKeys;
+                        a.key === "publish"
+                          ? moduleKeys.filter((k) => publishableModules.has(k))
+                          : a.key === "approve"
+                            ? moduleKeys.filter((k) => !NO_APPROVE_MODULES.has(k))
+                            : moduleKeys;
                       if (applicableKeys.length === 0) return null;
                       return (
                         <label key={a.key} className="flex items-center gap-1.5 text-xs text-ink-500">
                           <input
                             type="checkbox"
-                            disabled={isLocked}
+                            disabled={a.key === "publish" ? false : isLocked}
                             checked={applicableKeys.every((key) => getValue(key, a.key))}
                             onChange={() => toggleGroup(applicableKeys, a.key)}
                             className="h-4 w-4 cursor-pointer rounded border-ink-900/20 accent-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
@@ -521,7 +563,7 @@ export default function RolesClient({
         )}
         <button
           onClick={() => (isDirty ? handleSave() : toast.info("Tidak ada perubahan untuk disimpan"))}
-          disabled={saving || isLocked}
+          disabled={saving}
           className="flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:bg-brand-blue-light disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

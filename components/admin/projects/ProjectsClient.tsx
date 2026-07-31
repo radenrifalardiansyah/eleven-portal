@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Plus, Check, X, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import DataTable from "@/components/admin/DataTable";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
@@ -12,6 +12,7 @@ import Modal from "@/components/admin/Modal";
 import ExcelActions from "@/components/admin/ExcelActions";
 import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
+import ImageLightbox from "@/components/admin/ImageLightbox";
 import TiltCard from "@/components/ui/TiltCard";
 import {
   deleteProject,
@@ -319,6 +320,13 @@ export default function ProjectsClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari case study..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(project) => (
+          <ProjectDetail
+            project={project}
+            canEdit={canEdit}
+            onEdit={() => setFormModal({ mode: "edit", project })}
+          />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -461,5 +469,106 @@ function CategoryBadge({ label }: { label: string }) {
     <span className="inline-block rounded-lg bg-brand-blue/10 px-2.5 py-1 text-xs font-medium text-brand-blue">
       {label}
     </span>
+  );
+}
+
+function ProjectDetail({
+  project,
+  canEdit,
+  onEdit,
+}: {
+  project: Project;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const images = [project.image].filter(Boolean);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={project.status} />
+        {project.productName && <CategoryBadge label={project.productName} />}
+        {project.clientName && <CategoryBadge label={project.clientName} />}
+        <span className="text-xs text-ink-500">{project.year}</span>
+        {project.href && (
+          <a
+            href={project.href}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-brand-blue"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Lihat Live Site
+          </a>
+        )}
+      </div>
+
+      {images.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setPreviewIndex(0)}
+          className="group relative block h-44 w-full max-w-md overflow-hidden rounded-xl bg-ink-900/5"
+          aria-label="Lihat gambar"
+        >
+          <Image
+            src={images[0]}
+            alt=""
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+            unoptimized
+          />
+        </button>
+      )}
+
+      {previewIndex !== null && (
+        <ImageLightbox
+          images={images}
+          index={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Singkat</p>
+        <p className="mt-1 text-sm text-ink-900">{project.description}</p>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Lengkap</p>
+        <p className="mt-1 whitespace-pre-line text-sm text-ink-900">{project.long_description}</p>
+      </div>
+
+      {project.services.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Layanan yang Dipakai</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {project.services.map((service, i) => (
+              <li key={i} className="rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700">
+                {service}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Dibuat: {new Date(project.created_at).toLocaleString("id-ID")}</p>
+        <p>Diperbarui: {new Date(project.updated_at).toLocaleString("id-ID")}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Case Study
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

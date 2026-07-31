@@ -115,6 +115,22 @@ export default async function CaseStudyDetailPage({
                   {project.description}
                 </p>
 
+                {project.client && (
+                  <div className="mt-6 flex items-center gap-3 rounded-xl border border-black/5 bg-brand-paper/60 px-4 py-3">
+                    <div className="relative h-8 w-20 shrink-0">
+                      <Image
+                        src={project.client.logo}
+                        alt={project.client.name}
+                        fill
+                        className="object-contain object-left"
+                      />
+                    </div>
+                    <span className="text-sm text-brand-ink/60">
+                      Client &middot; <span className="font-medium text-ink-900">{project.client.name}</span>
+                    </span>
+                  </div>
+                )}
+
                 <div className="mt-6 flex flex-wrap gap-2">
                   {project.services.map((service) => (
                     <span

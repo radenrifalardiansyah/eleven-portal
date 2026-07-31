@@ -8,6 +8,7 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = "Hapus",
+  loadingLabel = "Menghapus...",
   loading,
   onConfirm,
   onCancel,
@@ -16,6 +17,7 @@ export default function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel?: string;
+  loadingLabel?: string;
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -57,7 +59,7 @@ export default function ConfirmDialog({
                 disabled={loading}
                 className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
               >
-                {loading ? "Menghapus..." : confirmLabel}
+                {loading ? loadingLabel : confirmLabel}
               </button>
             </div>
           </motion.div>

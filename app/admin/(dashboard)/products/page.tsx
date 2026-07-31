@@ -41,6 +41,7 @@ export default async function AdminProductsPage() {
           fields={[
             { key: "eyebrow", label: "Eyebrow" },
             { key: "title", label: "Judul" },
+            { key: "description", label: "Deskripsi", type: "textarea" },
             { key: "cta_label", label: "Label Tombol" },
           ]}
           initialContent={sectionContent}

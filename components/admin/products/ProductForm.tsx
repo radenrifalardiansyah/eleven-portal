@@ -2,18 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import TagInput from "@/components/admin/TagInput";
 import { ImageUploader, GalleryUploader } from "@/components/admin/ImageUploader";
 import SearchableSelect from "@/components/admin/SearchableSelect";
 import { getStatusOptions } from "@/components/admin/StatusOptions";
 import { createProduct, updateProduct, type ProductInput } from "@/app/admin/(dashboard)/products/actions";
 import type { Service } from "@/lib/cms/services";
-import { CURRENCY_OPTIONS } from "@/lib/currency";
+import { CURRENCY_OPTIONS, formatPrice } from "@/lib/currency";
+import {
+  PACKAGE_DISCOUNT_OPTIONS,
+  createEmptyPackage,
+  packageFinalPrice,
+} from "@/lib/cms/product-packages";
+
+const packageSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Nama paket wajib diisi"),
+  price_amount: z.number({ error: "Harga wajib diisi" }).min(0, "Harga tidak boleh negatif"),
+  discount_type: z.enum(["none", "percent", "amount"]),
+  discount_value: z.number().min(0, "Nilai diskon tidak boleh negatif"),
+  description: z.string(),
+});
 
 const schema = z.object({
   slug: z
@@ -22,8 +36,8 @@ const schema = z.object({
     .regex(/^[a-z0-9-]+$/, "Hanya huruf kecil, angka, dan strip"),
   name: z.string().min(1, "Nama wajib diisi"),
   service_id: z.string().min(1, "Layanan wajib dipilih"),
-  price_amount: z.number({ error: "Harga wajib diisi" }).min(0, "Harga tidak boleh negatif"),
   price_currency: z.enum(["IDR", "USD", "SGD", "EUR", "MYR"]),
+  packages: z.array(packageSchema).min(1, "Minimal 1 paket harga"),
   description: z.string().min(1, "Deskripsi singkat wajib diisi"),
   long_description: z.string().min(1, "Deskripsi lengkap wajib diisi"),
   features: z.array(z.string()).min(1, "Minimal 1 fitur"),
@@ -57,6 +71,7 @@ export default function ProductForm({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -64,8 +79,8 @@ export default function ProductForm({
       slug: "",
       name: "",
       service_id: "",
-      price_amount: 0,
       price_currency: "IDR",
+      packages: [createEmptyPackage()],
       description: "",
       long_description: "",
       features: [],
@@ -76,6 +91,12 @@ export default function ProductForm({
       ...defaultValues,
     },
   });
+
+  const { fields: packageFields, append: appendPackage, remove: removePackage } = useFieldArray({
+    control,
+    name: "packages",
+  });
+  const currency = watch("price_currency");
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
@@ -122,32 +143,117 @@ export default function ProductForm({
             )}
           />
         </Field>
-        <Field label="Harga" error={errors.price_amount?.message ?? errors.price_currency?.message}>
-          <div className="flex gap-2">
-            <Controller
-              control={control}
-              name="price_currency"
-              render={({ field }) => (
-                <div className="w-32 shrink-0">
-                  <SearchableSelect
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={CURRENCY_OPTIONS}
-                    placeholder="Mata uang"
-                  />
-                </div>
-              )}
-            />
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("price_amount", { valueAsNumber: true })}
-              className={inputClass}
-              placeholder="3500000"
-            />
-          </div>
+        <Field label="Mata Uang" error={errors.price_currency?.message} hint="Berlaku untuk semua paket harga di bawah">
+          <Controller
+            control={control}
+            name="price_currency"
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={CURRENCY_OPTIONS}
+                placeholder="Mata uang"
+              />
+            )}
+          />
         </Field>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-ink-700">Paket Harga</label>
+          <button
+            type="button"
+            onClick={() => appendPackage(createEmptyPackage())}
+            className="flex items-center gap-1.5 rounded-lg border border-ink-900/10 px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-900/5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Tambah Paket
+          </button>
+        </div>
+        {errors.packages?.message && (
+          <p className="text-xs text-red-600">{errors.packages.message as string}</p>
+        )}
+
+        <div className="space-y-3">
+          {packageFields.map((field, index) => {
+            const pkgErrors = errors.packages?.[index];
+            const values = watch(`packages.${index}`);
+            const discountType = values?.discount_type ?? "none";
+            const finalPrice = values ? packageFinalPrice(values) : 0;
+            return (
+              <div key={field.id} className="rounded-xl border border-ink-900/10 p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field label="Nama Paket" error={pkgErrors?.name?.message}>
+                    <input
+                      {...register(`packages.${index}.name`)}
+                      className={inputClass}
+                      placeholder="Paket Basic"
+                    />
+                  </Field>
+                  <Field label="Harga" error={pkgErrors?.price_amount?.message}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      {...register(`packages.${index}.price_amount`, { valueAsNumber: true })}
+                      className={inputClass}
+                      placeholder="3500000"
+                    />
+                  </Field>
+                  <Field label="Tipe Diskon">
+                    <Controller
+                      control={control}
+                      name={`packages.${index}.discount_type`}
+                      render={({ field }) => (
+                        <SearchableSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={PACKAGE_DISCOUNT_OPTIONS}
+                        />
+                      )}
+                    />
+                  </Field>
+                  <Field label="Nilai Diskon" error={pkgErrors?.discount_value?.message}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={discountType === "none"}
+                      {...register(`packages.${index}.discount_value`, { valueAsNumber: true })}
+                      className={`${inputClass} disabled:opacity-50`}
+                      placeholder={discountType === "percent" ? "10" : "100000"}
+                    />
+                  </Field>
+                </div>
+                <div className="mt-3">
+                  <Field label="Keterangan">
+                    <textarea
+                      {...register(`packages.${index}.description`)}
+                      rows={2}
+                      className={inputClass}
+                      placeholder="Cocok untuk usaha kecil yang baru mulai"
+                    />
+                  </Field>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-brand-blue">
+                    Harga Akhir: {formatPrice(finalPrice, currency)}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={packageFields.length === 1}
+                    onClick={() => removePackage(index)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-ink-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
+                    aria-label="Hapus paket"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <Field label="Deskripsi Singkat" error={errors.description?.message}>

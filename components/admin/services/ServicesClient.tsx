@@ -12,6 +12,7 @@ import Modal from "@/components/admin/Modal";
 import ExcelActions from "@/components/admin/ExcelActions";
 import StatusBadge from "@/components/admin/StatusBadge";
 import ApprovalActions from "@/components/admin/ApprovalActions";
+import ImageLightbox from "@/components/admin/ImageLightbox";
 import TiltCard from "@/components/ui/TiltCard";
 import {
   deleteService,
@@ -305,6 +306,13 @@ export default function ServicesClient({
         getRowId={(row) => row.id}
         searchPlaceholder="Cari layanan..."
         selection={canBulkSelect ? { selectedIds, onChange: setSelectedIds } : undefined}
+        renderExpandedRow={(service) => (
+          <ServiceDetail
+            service={service}
+            canEdit={canEdit}
+            onEdit={() => setFormModal({ mode: "edit", service })}
+          />
+        )}
         actions={
           <div className="flex items-center gap-2">
             <ExcelActions
@@ -430,5 +438,100 @@ export default function ServicesClient({
         onCancel={() => setBulkDeleteConfirm(false)}
       />
     </>
+  );
+}
+
+function ServiceDetail({
+  service,
+  canEdit,
+  onEdit,
+}: {
+  service: Service;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const images = service.gallery.filter(Boolean);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={service.status} />
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Singkat</p>
+        <p className="mt-1 text-sm text-ink-900">{service.description}</p>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Deskripsi Lengkap</p>
+        <p className="mt-1 whitespace-pre-line text-sm text-ink-900">{service.long_description}</p>
+      </div>
+
+      {service.benefits.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Benefit</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            {service.benefits.map((benefit, i) => (
+              <li key={i} className="rounded-lg bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-700">
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {images.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Galeri</p>
+          <div className="mt-1.5 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+            {images.map((src, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setPreviewIndex(i)}
+                className="group relative aspect-square overflow-hidden rounded-xl bg-ink-900/5"
+                aria-label={`Lihat foto ${i + 1}`}
+              >
+                <Image
+                  src={src}
+                  alt=""
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                  unoptimized
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {previewIndex !== null && (
+        <ImageLightbox
+          images={images}
+          index={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onIndexChange={setPreviewIndex}
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-4 border-t border-ink-900/5 pt-4 text-xs text-ink-500">
+        <p>Dibuat: {new Date(service.created_at).toLocaleString("id-ID")}</p>
+        <p>Diperbarui: {new Date(service.updated_at).toLocaleString("id-ID")}</p>
+      </div>
+
+      {canEdit && (
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition hover:opacity-95"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit Layanan
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

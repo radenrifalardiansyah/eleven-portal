@@ -26,10 +26,10 @@ const schema = z
     always_visible: z.boolean(),
     show_bottom_nav: z.boolean(),
     show_on_portal: z.boolean(),
+    show_section_on_portal: z.boolean(),
     portal_href: z.string(),
     portal_match_path: z.string(),
     portal_label: z.string(),
-    portal_sort_order: z.number().int(),
   })
   .superRefine((values, ctx) => {
     const href = values.href.trim();
@@ -113,10 +113,10 @@ export default function MenuItemForm({
       always_visible: false,
       show_bottom_nav: false,
       show_on_portal: false,
+      show_section_on_portal: true,
       portal_href: "",
       portal_match_path: "",
       portal_label: "",
-      portal_sort_order: 0,
       ...defaultValues,
     },
   });
@@ -270,10 +270,24 @@ export default function MenuItemForm({
         </label>
       </div>
 
-      <label className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-3 py-2.5 text-sm text-ink-700">
-        <input type="checkbox" {...register("show_on_portal")} className="h-4 w-4 rounded border-ink-900/20" />
-        Tampil di Portal (navbar halaman publik)
-      </label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-3 py-2.5 text-sm text-ink-700">
+          <input type="checkbox" {...register("show_on_portal")} className="h-4 w-4 rounded border-ink-900/20" />
+          Tampil di Menu (navbar halaman publik)
+        </label>
+        <label className="flex items-center gap-2 rounded-xl border border-ink-900/10 px-3 py-2.5 text-sm text-ink-700">
+          <input
+            type="checkbox"
+            {...register("show_section_on_portal")}
+            className="h-4 w-4 rounded border-ink-900/20"
+          />
+          Tampil sebagai Section (halaman utama)
+        </label>
+      </div>
+      <p className="text-xs text-ink-500">
+        Urutan tampil di navbar publik &amp; section halaman utama mengikuti urutan menu ini di sidebar admin —
+        atur pakai tombol panah atas/bawah di daftar menu.
+      </p>
 
       {showOnPortalValue && (
         <div className="grid grid-cols-1 gap-5 rounded-xl border border-ink-900/10 p-4 sm:grid-cols-2">
@@ -289,13 +303,6 @@ export default function MenuItemForm({
           </Field>
           <Field label="Portal Label (opsional)" hint="Kosongkan untuk pakai Label yang sama dengan sidebar admin">
             <input {...register("portal_label")} className={inputClass} placeholder={labelValue || "Label"} />
-          </Field>
-          <Field label="Urutan di Portal" hint="Urutan tampil di navbar publik, terpisah dari urutan sidebar admin">
-            <input
-              type="number"
-              {...register("portal_sort_order", { valueAsNumber: true })}
-              className={inputClass}
-            />
           </Field>
         </div>
       )}

@@ -6,13 +6,14 @@ import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { ContentStatus } from "@/lib/supabase/types";
 import type { CurrencyCode } from "@/lib/currency";
+import type { ProductPackage } from "@/lib/cms/product-packages";
 
 export type ProductInput = {
   slug: string;
   name: string;
   service_id: string;
-  price_amount: number;
   price_currency: CurrencyCode;
+  packages: ProductPackage[];
   description: string;
   long_description: string;
   features: string[];

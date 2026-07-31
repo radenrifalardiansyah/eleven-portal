@@ -8,17 +8,25 @@ import TiltCard from "@/components/ui/TiltCard";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
 import type { PublicProduct } from "@/lib/cms/public-products";
 
-export default function Products({ products }: { products: PublicProduct[] }) {
+export default function Products({
+  products,
+  eyebrow = "Product",
+  title = "Produk yang Kami Jual",
+  description = "Berbagai paket produk siap pakai untuk membantu bisnis kamu tampil lebih profesional.",
+  ctaLabel = "Lihat Semua Produk",
+}: {
+  products: PublicProduct[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
+}) {
   const featured = products.slice(0, 3);
 
   return (
     <section id="products" className="relative bg-brand-paper py-28">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionTitle
-          eyebrow="Product"
-          title="Produk yang Kami Jual"
-          description="Berbagai paket produk siap pakai untuk membantu bisnis kamu tampil lebih profesional."
-        />
+        <SectionTitle eyebrow={eyebrow} title={title} description={description} />
 
         <RevealGroup className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featured.map((product) => (
@@ -66,7 +74,7 @@ export default function Products({ products }: { products: PublicProduct[] }) {
             data-cursor-hover
             className="inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,83,255,0.3)] transition-transform hover:scale-105"
           >
-            Lihat Semua Produk
+            {ctaLabel}
             <ArrowRight size={16} />
           </Link>
         </div>

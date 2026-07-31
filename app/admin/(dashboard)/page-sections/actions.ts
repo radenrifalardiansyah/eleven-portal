@@ -18,5 +18,6 @@ export async function updatePageSectionContent(
     .eq("section_key", sectionKey);
   if (error) throw new Error(error.message);
 
+  revalidatePath("/admin/page-sections");
   revalidatePath("/", "layout");
 }
