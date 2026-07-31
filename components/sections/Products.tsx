@@ -58,9 +58,6 @@ export default function Products({
                     <p className="mt-3 text-sm leading-relaxed text-brand-ink/60">
                       {product.description}
                     </p>
-                    <p className="mt-5 font-heading text-base font-semibold text-brand-blue">
-                      {product.price}
-                    </p>
                   </div>
                 </TiltCard>
               </Link>
