@@ -23,14 +23,14 @@ export type MenuItemRow = {
 
 export async function getAllMenuGroups(): Promise<MenuGroupRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("menu_groups").select("*").order("sort_order");
+  const { data, error } = await supabase.from("menu_groups").select("*").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function getAllMenuItems(): Promise<MenuItemRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("menu_items").select("*").order("sort_order");
+  const { data, error } = await supabase.from("menu_items").select("*").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }

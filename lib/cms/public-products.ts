@@ -84,7 +84,7 @@ function toPublicProduct(row: ProductRow, serviceTitle: string): PublicProduct {
 export async function getPublishedProducts(): Promise<PublicProduct[]> {
   const supabase = createPublicClient();
   const [{ data, error }, { data: services, error: serviceError }] = await Promise.all([
-    supabase.from("products").select(SELECT_COLUMNS).eq("status", "published").order("sort_order"),
+    supabase.from("products").select(SELECT_COLUMNS).eq("status", "published").order("sort_order").order("id"),
     supabase.from("services").select("id, title"),
   ]);
   if (error) throw new Error(error.message);

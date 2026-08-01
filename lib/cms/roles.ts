@@ -12,7 +12,7 @@ export type RoleRow = {
 
 export async function getAllRoles(): Promise<RoleRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("roles").select("*").order("sort_order");
+  const { data, error } = await supabase.from("roles").select("*").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }

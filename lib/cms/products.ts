@@ -6,7 +6,7 @@ export type Product = Database["public"]["Tables"]["products"]["Row"] & { servic
 export async function getAllProducts(): Promise<Product[]> {
   const supabase = await createClient();
   const [{ data: products, error }, { data: services, error: serviceError }] = await Promise.all([
-    supabase.from("products").select("*").order("sort_order"),
+    supabase.from("products").select("*").order("sort_order").order("id"),
     supabase.from("services").select("id, title"),
   ]);
   if (error) throw new Error(error.message);

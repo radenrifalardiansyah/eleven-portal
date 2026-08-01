@@ -74,7 +74,7 @@ export async function moveRole(key: string, direction: "up" | "down") {
   const { data: siblings, error: siblingsError } = await supabase
     .from("roles")
     .select("key, sort_order")
-    .order("sort_order");
+    .order("sort_order").order("key");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.key === key);

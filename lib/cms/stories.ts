@@ -5,7 +5,7 @@ export type Story = Database["public"]["Tables"]["stories"]["Row"];
 
 export async function getAllStories(): Promise<Story[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("stories").select("*").order("sort_order");
+  const { data, error } = await supabase.from("stories").select("*").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }

@@ -271,6 +271,27 @@ export type Database = {
         Args: { p_since: string; p_limit: number };
         Returns: { referrer_host: string; total: number }[];
       };
+      analytics_overview_kpi: {
+        Args: Record<string, never>;
+        Returns: {
+          total_pageviews_all_time: number;
+          today_pageviews: number;
+          yesterday_pageviews: number;
+          tracking_since: string | null;
+        }[];
+      };
+      analytics_section_breakdown: {
+        Args: { p_since: string };
+        Returns: { section: string; total: number }[];
+      };
+      analytics_period_comparison: {
+        Args: { p_since: string };
+        Returns: { current_total: number; previous_total: number }[];
+      };
+      analytics_top_content: {
+        Args: { p_path_prefix: string; p_since: string; p_limit: number };
+        Returns: { path: string; total: number }[];
+      };
     };
   };
 };

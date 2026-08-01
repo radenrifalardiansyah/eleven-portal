@@ -14,7 +14,7 @@ export async function getPublishedClientLogos(): Promise<string[]> {
     .from("testimonial_clients")
     .select("logo")
     .eq("status", "published")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => row.logo);
 }
@@ -26,7 +26,7 @@ export async function getPublishedTestimonialQuotes(): Promise<PublicTestimonial
     .select("logo, name, testimonial_quote, testimonial_author, testimonial_rating")
     .eq("status", "published")
     .neq("testimonial_quote", "")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => ({
     logo: row.logo,

@@ -27,7 +27,14 @@ export async function createService(input: ServiceInput) {
   const profile = await requireModule("services", "edit");
   const supabase = await createClient();
   const status = clampStatus(input.status, can(profile.permissions, "services", "publish"));
-  const { error } = await supabase.from("services").insert({ ...input, status });
+  const { data: last } = await supabase
+    .from("services")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const sort_order = (last?.sort_order ?? -1) + 1;
+  const { error } = await supabase.from("services").insert({ ...input, status, sort_order });
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/services");
@@ -124,7 +131,7 @@ export async function moveService(id: string, direction: "up" | "down") {
   const { data: siblings, error: siblingsError } = await supabase
     .from("services")
     .select("id, sort_order")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.id === id);

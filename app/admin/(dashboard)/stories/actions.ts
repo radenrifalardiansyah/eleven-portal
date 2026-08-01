@@ -30,7 +30,14 @@ export async function createStory(input: StoryInput) {
   const profile = await requireModule("stories", "edit");
   const supabase = await createClient();
   const status = clampStatus(input.status, can(profile.permissions, "stories", "publish"));
-  const { error } = await supabase.from("stories").insert({ ...input, status });
+  const { data: last } = await supabase
+    .from("stories")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const sort_order = (last?.sort_order ?? -1) + 1;
+  const { error } = await supabase.from("stories").insert({ ...input, status, sort_order });
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/stories");
@@ -107,7 +114,7 @@ export async function moveStory(id: string, direction: "up" | "down") {
   const { data: siblings, error: siblingsError } = await supabase
     .from("stories")
     .select("id, sort_order")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.id === id);

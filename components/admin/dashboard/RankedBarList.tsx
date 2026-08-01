@@ -9,11 +9,14 @@ export default function RankedBarList({
   items,
   colorFor,
   showPercentOfTotal = false,
+  showRank = false,
 }: {
   title: string;
   items: RankedBarItem[];
   colorFor: (key: string) => string;
   showPercentOfTotal?: boolean;
+  /** Prepend a numbered rank badge before the label (e.g. Portfolio/Berita Terpopuler). */
+  showRank?: boolean;
 }) {
   const max = Math.max(1, ...items.map((item) => item.value));
   const total = items.reduce((sum, item) => sum + item.value, 0);
@@ -26,7 +29,7 @@ export default function RankedBarList({
         <p className="mt-4 text-sm text-ink-500">Belum ada data.</p>
       ) : (
         <ul className="mt-4 space-y-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const color = colorFor(item.key);
             const widthPct = Math.max(4, (item.value / max) * 100);
             const percentOfTotal = total > 0 ? Math.round((item.value / total) * 100) : 0;
@@ -34,8 +37,13 @@ export default function RankedBarList({
             return (
               <li key={item.key}>
                 <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-                  <span className="truncate text-ink-700" title={item.label}>
-                    {item.label}
+                  <span className="flex min-w-0 items-center gap-2 truncate text-ink-700" title={item.label}>
+                    {showRank && (
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink-900/5 text-[11px] font-semibold text-ink-500">
+                        {index + 1}
+                      </span>
+                    )}
+                    <span className="truncate">{item.label}</span>
                   </span>
                   <span className="shrink-0 tabular-nums text-ink-500">
                     {item.value.toLocaleString("id-ID")}

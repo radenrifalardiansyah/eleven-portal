@@ -1,6 +1,7 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { SERIES_PAGEVIEWS, SERIES_VISITORS, CHART_INK } from "@/lib/analytics/chart-colors";
 import { formatBucketLabel, type AnalyticsGranularity } from "@/lib/analytics/ranges";
 
@@ -34,9 +35,13 @@ function CustomTooltip({
 export default function TimeseriesChart({
   data,
   granularity,
+  periodDeltaPct,
 }: {
   data: TimeseriesPoint[];
   granularity: AnalyticsGranularity;
+  /** % change vs the immediately preceding period of equal length. `null`/omit hides the badge
+   *  (e.g. no meaningful "previous period" for the all-time "Tahunan" view). */
+  periodDeltaPct?: number | null;
 }) {
   const chartData = data.map((point) => ({
     label: formatBucketLabel(point.bucket, granularity),
@@ -46,8 +51,21 @@ export default function TimeseriesChart({
 
   return (
     <div className="rounded-2xl border border-ink-900/5 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-semibold text-ink-900">Tren Kunjungan Portal</p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-semibold text-ink-900">Tren Kunjungan Portal</p>
+          {periodDeltaPct != null && (
+            <span
+              className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                periodDeltaPct >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+              }`}
+            >
+              {periodDeltaPct >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {periodDeltaPct >= 0 ? "+" : ""}
+              {periodDeltaPct}% dibanding periode sebelumnya
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-4 text-xs text-ink-500">
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: SERIES_PAGEVIEWS }} />
@@ -64,7 +82,13 @@ export default function TimeseriesChart({
         <p className="py-16 text-center text-sm text-ink-500">Belum ada data untuk rentang ini.</p>
       ) : (
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <defs>
+              <linearGradient id="kunjunganFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={SERIES_PAGEVIEWS} stopOpacity={0.12} />
+                <stop offset="100%" stopColor={SERIES_PAGEVIEWS} stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid vertical={false} stroke={CHART_INK.gridline} />
             <XAxis
               dataKey="label"
@@ -79,11 +103,12 @@ export default function TimeseriesChart({
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line
+            <Area
               type="monotone"
               dataKey="Kunjungan"
               stroke={SERIES_PAGEVIEWS}
               strokeWidth={2}
+              fill="url(#kunjunganFill)"
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
             />
@@ -95,7 +120,7 @@ export default function TimeseriesChart({
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </div>

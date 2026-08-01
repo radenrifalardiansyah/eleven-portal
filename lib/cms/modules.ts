@@ -8,7 +8,7 @@ export type ModuleRow = {
 
 export async function getAllModules(): Promise<ModuleRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("modules").select("key, label, sort_order").order("sort_order");
+  const { data, error } = await supabase.from("modules").select("key, label, sort_order").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }

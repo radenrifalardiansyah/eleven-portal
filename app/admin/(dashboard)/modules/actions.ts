@@ -66,7 +66,7 @@ export async function moveMenuGroup(id: string, direction: "up" | "down") {
   const { data: siblings, error: siblingsError } = await supabase
     .from("menu_groups")
     .select("id, sort_order")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.id === id);

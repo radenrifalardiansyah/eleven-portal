@@ -6,9 +6,10 @@ import { Eye, Users, MousePointerClick } from "lucide-react";
 import StatCard from "@/components/admin/StatCard";
 import TimeseriesChart from "@/components/admin/dashboard/TimeseriesChart";
 import RankedBarList from "@/components/admin/dashboard/RankedBarList";
+import DonutChart from "@/components/admin/dashboard/DonutChart";
 import { getPortalAnalytics, type PortalAnalytics } from "@/app/admin/(dashboard)/actions";
 import { GRANULARITY_TABS, type AnalyticsGranularity } from "@/lib/analytics/ranges";
-import { DEVICE_COLORS, DEVICE_LABELS, browserColor } from "@/lib/analytics/chart-colors";
+import { DEVICE_COLORS, DEVICE_LABELS, SECTION_COLORS, SECTION_LABELS, browserColor } from "@/lib/analytics/chart-colors";
 
 export default function AnalyticsSection({
   initialGranularity,
@@ -53,28 +54,38 @@ export default function AnalyticsSection({
 
       <div className={clsx("space-y-6 transition-opacity", isPending && "opacity-60")}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label="Total Kunjungan" value={data.kpis.total_pageviews} icon={Eye} />
+          <StatCard label="Kunjungan Periode Ini" value={data.kpis.total_pageviews} icon={Eye} />
           <StatCard label="Pengunjung Unik" value={data.kpis.unique_visitors} icon={Users} accent="yellow" />
           <StatCard label="Klik Menu" value={data.kpis.total_menu_clicks} icon={MousePointerClick} />
         </div>
 
-        <TimeseriesChart data={data.timeseries} granularity={granularity} />
+        <TimeseriesChart data={data.timeseries} granularity={granularity} periodDeltaPct={data.periodComparison.deltaPct} />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <RankedBarList
-            title="Perangkat"
+          <DonutChart
+            title="Desktop vs Mobile"
+            centerLabel="Total Kunjungan"
             items={data.deviceBreakdown.map((row) => ({
               key: row.device_type,
               label: DEVICE_LABELS[row.device_type] ?? row.device_type,
               value: row.total,
             }))}
-            colorFor={(key) => DEVICE_COLORS[key] ?? "#8B8D93"}
-            showPercentOfTotal
+            colors={DEVICE_COLORS}
           />
           <RankedBarList
             title="Browser"
             items={data.browserBreakdown.map((row) => ({ key: row.browser, label: row.browser, value: row.total }))}
             colorFor={browserColor}
+            showPercentOfTotal
+          />
+          <RankedBarList
+            title="Kunjungan per Menu"
+            items={data.sectionBreakdown.map((row) => ({
+              key: row.section,
+              label: SECTION_LABELS[row.section] ?? row.section,
+              value: row.total,
+            }))}
+            colorFor={(key) => SECTION_COLORS[key] ?? "#8B8D93"}
             showPercentOfTotal
           />
           <RankedBarList
@@ -95,6 +106,18 @@ export default function AnalyticsSection({
               value: row.total,
             }))}
             colorFor={() => "#2a78d6"}
+          />
+          <RankedBarList
+            title="Portfolio Terpopuler"
+            items={data.topCaseStudies.map((row, i) => ({ key: `${i}-${row.title}`, label: row.title, value: row.total }))}
+            colorFor={() => "#2a78d6"}
+            showRank
+          />
+          <RankedBarList
+            title="Berita Terpopuler"
+            items={data.topStories.map((row, i) => ({ key: `${i}-${row.title}`, label: row.title, value: row.total }))}
+            colorFor={() => "#2a78d6"}
+            showRank
           />
         </div>
       </div>

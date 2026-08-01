@@ -95,7 +95,7 @@ export async function moveMenuItem(id: string, direction: "up" | "down") {
   siblingsQuery = item.parent_id
     ? siblingsQuery.eq("parent_id", item.parent_id)
     : siblingsQuery.is("parent_id", null);
-  const { data: siblings, error: siblingsError } = await siblingsQuery.order("sort_order");
+  const { data: siblings, error: siblingsError } = await siblingsQuery.order("sort_order").order("id");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.id === id);

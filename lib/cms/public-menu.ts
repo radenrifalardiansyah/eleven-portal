@@ -9,7 +9,7 @@ export const getPortalNavLinks = cache(async (): Promise<PortalNavLink[]> => {
     .from("menu_items")
     .select("label, portal_label, portal_href, portal_match_path, sort_order")
     .eq("show_on_portal", true)
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
 
   return (data ?? [])
@@ -32,7 +32,7 @@ export const getVisibleHomeSections = cache(async (): Promise<string[]> => {
     .select("module_key")
     .eq("show_section_on_portal", true)
     .is("parent_id", null)
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => row.module_key);
 });

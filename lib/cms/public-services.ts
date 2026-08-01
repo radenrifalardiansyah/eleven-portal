@@ -40,7 +40,7 @@ export async function getPublishedServices(): Promise<PublicService[]> {
     .from("services")
     .select(SELECT_COLUMNS)
     .eq("status", "published")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return (data ?? []).map(toPublicService);
 }

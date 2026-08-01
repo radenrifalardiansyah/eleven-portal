@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { Loader2, Upload, Link2, Check, Instagram, Linkedin, Youtube } from "lucide-react";
 import { uploadMediaFile } from "@/lib/supabase/upload";
+import { resizeImageToSquare } from "@/lib/utils/image-resize";
 import TiktokIcon from "@/components/ui/TiktokIcon";
 import {
   updateBranding,
@@ -296,12 +297,15 @@ function LogoSlot({
   value,
   onUploaded,
   canEdit,
+  resizeTo,
 }: {
   label: string;
   hint: string;
   value: string;
   onUploaded: (url: string) => Promise<void>;
   canEdit: boolean;
+  /** Jika diisi, gambar otomatis di-crop persegi & di-resize ke ukuran ini (px) sebelum diunggah. */
+  resizeTo?: number;
 }) {
   const [linkMode, setLinkMode] = useState(false);
   const [linkValue, setLinkValue] = useState(value);
@@ -311,7 +315,8 @@ function LogoSlot({
   async function handleFile(file: File) {
     setBusy(true);
     try {
-      const url = await uploadMediaFile(file, "site-settings");
+      const upload = resizeTo ? await resizeImageToSquare(file, resizeTo) : file;
+      const url = await uploadMediaFile(upload, "site-settings");
       await onUploaded(url);
       setLinkValue(url);
       toast.success(`${label} diperbarui`);
@@ -455,17 +460,19 @@ function LogoFaviconSection({
         />
         <LogoSlot
           label="Favicon"
-          hint="Ikon tab browser di halaman publik website. PNG persegi, background solid (bukan transparan) agar terbaca di tab gelap/terang."
+          hint="Ikon tab browser di halaman publik website. Gambar otomatis di-crop persegi & disesuaikan ukurannya."
           value={branding.faviconUrl}
           onUploaded={(url) => save({ faviconUrl: url })}
           canEdit={canEdit}
+          resizeTo={256}
         />
         <LogoSlot
           label="Favicon Admin"
-          hint="Ikon tab browser khusus saat mengakses halaman /admin. Kosongkan untuk memakai Favicon di atas."
+          hint="Ikon tab browser khusus saat mengakses halaman /admin. Kosongkan untuk memakai Favicon di atas. Gambar otomatis di-crop persegi & disesuaikan ukurannya."
           value={branding.adminFaviconUrl}
           onUploaded={(url) => save({ adminFaviconUrl: url })}
           canEdit={canEdit}
+          resizeTo={256}
         />
         <LogoSlot
           label="Icon Mobile"

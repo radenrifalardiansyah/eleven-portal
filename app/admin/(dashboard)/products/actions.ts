@@ -39,7 +39,14 @@ export async function createProduct(input: ProductInput) {
   const profile = await requireModule("products", "edit");
   const supabase = await createClient();
   const status = clampStatus(input.status, can(profile.permissions, "products", "publish"));
-  const { error } = await supabase.from("products").insert({ ...input, status });
+  const { data: last } = await supabase
+    .from("products")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const sort_order = (last?.sort_order ?? -1) + 1;
+  const { error } = await supabase.from("products").insert({ ...input, status, sort_order });
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/products");
@@ -136,7 +143,7 @@ export async function moveProduct(id: string, direction: "up" | "down") {
   const { data: siblings, error: siblingsError } = await supabase
     .from("products")
     .select("id, sort_order")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (siblingsError) throw new Error(siblingsError.message);
 
   const index = (siblings ?? []).findIndex((s) => s.id === id);

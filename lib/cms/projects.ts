@@ -10,7 +10,7 @@ export async function getAllProjects(): Promise<Project[]> {
   const supabase = await createClient();
   const [{ data: projects, error }, { data: products, error: productError }, { data: clients, error: clientError }] =
     await Promise.all([
-      supabase.from("projects").select("*").order("sort_order"),
+      supabase.from("projects").select("*").order("sort_order").order("id"),
       supabase.from("products").select("id, name"),
       supabase.from("testimonial_clients").select("id, name"),
     ]);

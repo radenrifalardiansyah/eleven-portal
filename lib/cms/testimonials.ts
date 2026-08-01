@@ -5,7 +5,7 @@ export type TestimonialClient = Database["public"]["Tables"]["testimonial_client
 
 export async function getAllTestimonialClients(): Promise<TestimonialClient[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("testimonial_clients").select("*").order("sort_order");
+  const { data, error } = await supabase.from("testimonial_clients").select("*").order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return data ?? [];
 }

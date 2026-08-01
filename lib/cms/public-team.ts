@@ -43,7 +43,7 @@ export async function getPublishedTeamMembers(): Promise<PublicTeamMember[]> {
     .from("team_members")
     .select(SELECT_COLUMNS)
     .eq("status", "published")
-    .order("sort_order");
+    .order("sort_order").order("id");
   if (error) throw new Error(error.message);
   return (data ?? []).map(toPublicTeamMember);
 }
