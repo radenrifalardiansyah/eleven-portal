@@ -3,7 +3,7 @@ const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll([OFFLINE_URL, "/manifest.webmanifest"]))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll([OFFLINE_URL, "/admin/manifest.webmanifest"]))
   );
   self.skipWaiting();
 });

@@ -97,6 +97,7 @@ export default function ProfileForm({
           lastSignInAt={lastSignInAt}
           loginHistory={loginHistory}
           onAvatarChanged={() => router.refresh()}
+          onProfileSaved={() => router.refresh()}
         />
       )}
       {tab === "keamanan" && <KeamananTab email={email} />}
@@ -117,6 +118,7 @@ function ProfilTab({
   lastSignInAt,
   loginHistory,
   onAvatarChanged,
+  onProfileSaved,
 }: {
   userId: string;
   email: string;
@@ -129,6 +131,7 @@ function ProfilTab({
   lastSignInAt: string | null;
   loginHistory: LoginHistoryEntry[];
   onAvatarChanged: () => void;
+  onProfileSaved: () => void;
 }) {
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -181,6 +184,7 @@ function ProfilTab({
       const input: ProfileUpdateInput = { fullName, phone, position, bio };
       await updateOwnProfile(input);
       toast.success("Profil berhasil diperbarui");
+      onProfileSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal memperbarui profil");
     } finally {

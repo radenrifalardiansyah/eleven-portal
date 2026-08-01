@@ -3,7 +3,6 @@ import { Poppins, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import AppChrome from "@/components/layout/AppChrome";
 import JsonLd from "@/components/seo/JsonLd";
-import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import { siteConfig, absoluteUrl } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/cms/public-site-settings";
 
@@ -127,7 +126,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="id" className={`${poppins.variable} ${notoSans.variable}`}>
       <body>
         <JsonLd data={organizationJsonLd} />
-        <ServiceWorkerRegistration />
         <AppChrome>{children}</AppChrome>
       </body>
     </html>

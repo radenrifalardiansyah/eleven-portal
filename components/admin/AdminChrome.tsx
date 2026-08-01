@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -119,7 +120,7 @@ export default function AdminChrome({
 
         <nav
           className={`flex-1 space-y-2 overflow-y-auto pb-4 ${
-            isCollapsed ? "scrollbar-none overflow-x-hidden px-2" : "px-3"
+            isCollapsed ? "scrollbar-none px-2" : "px-3"
           }`}
         >
           {navGroups.map((group) => {
@@ -145,7 +146,7 @@ export default function AdminChrome({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
+                      className={isCollapsed ? "overflow-visible" : "overflow-hidden"}
                     >
                       <div className="space-y-1 pb-1">
                         {group.items
@@ -161,46 +162,42 @@ export default function AdminChrome({
 
                             if (isCollapsed) {
                               const Icon = ICON_MAP[item.icon];
-                              return (
-                                <div key={item.id} className="group/rail relative">
-                                  {item.href ? (
-                                    <Link
-                                      href={item.href}
-                                      title={item.label}
-                                      className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl ${
-                                        active
-                                          ? "bg-brand-blue/10 text-brand-blue"
-                                          : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
-                                      }`}
-                                    >
-                                      {Icon && <Icon className="h-[18px] w-[18px]" />}
-                                    </Link>
-                                  ) : (
-                                    <div
-                                      title={item.label}
-                                      className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-ink-400"
-                                    >
-                                      {Icon && <Icon className="h-[18px] w-[18px]" />}
-                                    </div>
-                                  )}
-                                  {hasChildren && (
-                                    <div className="invisible absolute left-full top-0 z-50 ml-2 w-48 rounded-xl border border-ink-900/5 bg-white p-2 opacity-0 shadow-lg transition-opacity group-hover/rail:visible group-hover/rail:opacity-100">
-                                      <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500/70">
-                                        {item.label}
-                                      </p>
-                                      <div className="space-y-1">
-                                        {children.map((child) => (
-                                          <NavLink
-                                            key={child.id}
-                                            item={child}
-                                            pathname={pathname}
-                                            onNavigate={() => setMobileOpen(false)}
-                                          />
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
+                              const iconEl = item.href ? (
+                                <Link
+                                  href={item.href}
+                                  className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
+                                    active
+                                      ? "bg-brand-blue/10 text-brand-blue"
+                                      : "text-ink-700 hover:scale-105 hover:bg-ink-900/5 hover:text-ink-900"
+                                  }`}
+                                >
+                                  {Icon && <Icon className="h-[18px] w-[18px]" />}
+                                </Link>
+                              ) : (
+                                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-ink-400">
+                                  {Icon && <Icon className="h-[18px] w-[18px]" />}
                                 </div>
+                              );
+
+                              if (hasChildren) {
+                                return (
+                                  <RailFlyout key={item.id} label={item.label} trigger={iconEl}>
+                                    {children.map((child) => (
+                                      <NavLink
+                                        key={child.id}
+                                        item={child}
+                                        pathname={pathname}
+                                        onNavigate={() => setMobileOpen(false)}
+                                      />
+                                    ))}
+                                  </RailFlyout>
+                                );
+                              }
+
+                              return (
+                                <RailTooltip key={item.id} label={item.label}>
+                                  {iconEl}
+                                </RailTooltip>
                               );
                             }
 
@@ -332,9 +329,17 @@ export default function AdminChrome({
           type="button"
           onClick={toggleSidebarCollapsed}
           aria-label={sidebarCollapsed ? "Perluas sidebar" : "Ciutkan sidebar"}
-          className="absolute -right-3 top-20 hidden h-6 w-6 items-center justify-center rounded-full border border-ink-900/10 bg-white text-ink-500 shadow-md hover:bg-ink-900/5 hover:text-ink-900 lg:flex"
+          className="absolute -right-3 top-20 hidden h-6 w-6 items-center justify-center rounded-full border border-ink-900/10 bg-white text-ink-500 shadow-md transition-all duration-200 hover:scale-110 hover:border-brand-blue/30 hover:bg-brand-blue/10 hover:text-brand-blue hover:shadow-lg active:scale-95 lg:flex"
         >
-          {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          <motion.span
+            key={sidebarCollapsed ? "right" : "left"}
+            initial={{ opacity: 0, rotate: -90 }}
+            animate={{ opacity: 1, rotate: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex"
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          </motion.span>
         </button>
       </aside>
 
@@ -479,5 +484,108 @@ function NavLink({
       {Icon && <Icon className="h-[18px] w-[18px]" />}
       <span className="flex-1">{item.label}</span>
     </Link>
+  );
+}
+
+/** Hover tooltip anchored to its trigger via viewport coordinates and
+ *  rendered through a portal — avoids being clipped by scrollable/animated
+ *  ancestors (e.g. the sidebar rail's `overflow-y-auto` nav). */
+function RailTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  function show() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) setCoords({ top: rect.top + rect.height / 2, left: rect.right });
+  }
+
+  return (
+    <div ref={triggerRef} onMouseEnter={show} onMouseLeave={() => setCoords(null)} className="relative">
+      {children}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {coords && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, x: 4, y: "-50%" }}
+                animate={{ opacity: 1, scale: 1, x: 12, y: "-50%" }}
+                exit={{ opacity: 0, scale: 0.95, x: 4, y: "-50%" }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                style={{ position: "fixed", top: coords.top, left: coords.left }}
+                className="pointer-events-none z-[100] whitespace-nowrap rounded-lg bg-ink-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-ink-900/25"
+              >
+                {label}
+                <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-ink-900" />
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+/** Same portal-anchored positioning as {@link RailTooltip}, for the
+ *  collapsed rail's submenu flyout (keeps rendering while the pointer is
+ *  over either the trigger icon or the flyout panel itself). */
+function RailFlyout({
+  label,
+  trigger,
+  children,
+}: {
+  label: string;
+  trigger: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => setMounted(true), []);
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  function show() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) setCoords({ top: rect.top, left: rect.right });
+  }
+
+  function scheduleHide() {
+    closeTimer.current = setTimeout(() => setCoords(null), 120);
+  }
+
+  return (
+    <div ref={triggerRef} onMouseEnter={show} onMouseLeave={scheduleHide} className="relative">
+      {trigger}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {coords && (
+              <motion.div
+                onMouseEnter={show}
+                onMouseLeave={scheduleHide}
+                initial={{ opacity: 0, scale: 0.95, x: 4, y: 0 }}
+                animate={{ opacity: 1, scale: 1, x: 12, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, x: 4, y: 0 }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                style={{ position: "fixed", top: coords.top, left: coords.left }}
+                className="z-[100] w-48 origin-left rounded-xl border border-ink-900/5 bg-white p-2 shadow-lg shadow-ink-900/10"
+              >
+                <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500/70">
+                  {label}
+                </p>
+                <div className="space-y-1">{children}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+    </div>
   );
 }

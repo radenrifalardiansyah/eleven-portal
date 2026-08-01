@@ -26,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Admin Login",
     robots: { index: false, follow: false },
     icons: { icon: faviconUrl, apple: faviconUrl },
+    manifest: "/admin/manifest.webmanifest",
   };
 }
 

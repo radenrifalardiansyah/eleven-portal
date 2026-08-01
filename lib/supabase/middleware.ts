@@ -30,15 +30,20 @@ export async function updateSession(request: NextRequest) {
 
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
   const isLoginRoute = request.nextUrl.pathname === "/admin/login";
+  const isManifestRoute = request.nextUrl.pathname === "/admin/manifest.webmanifest";
+  // Server Action calls (e.g. recordLogin() from LoginForm) POST back to
+  // "/admin/login" right after sign-in, while the session is still fresh —
+  // don't redirect those away or the action body never runs.
+  const isServerAction = request.headers.has("next-action");
 
-  if (isAdminRoute && !isLoginRoute && !user) {
+  if (isAdminRoute && !isLoginRoute && !isManifestRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isLoginRoute && user) {
+  if (isLoginRoute && user && !isServerAction) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin";
     url.search = "";

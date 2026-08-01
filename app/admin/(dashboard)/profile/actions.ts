@@ -25,7 +25,8 @@ export async function updateOwnProfile(input: ProfileUpdateInput) {
     .eq("id", profile.id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/admin/profile");
+  // Nama juga tampil di sidebar/header pada semua halaman admin, bukan hanya /profile.
+  revalidatePath("/admin", "layout");
 }
 
 export async function updateAvatarUrl(avatarUrl: string) {

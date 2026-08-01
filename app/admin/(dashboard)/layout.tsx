@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: faviconUrl,
       apple: faviconUrl,
     },
+    manifest: "/admin/manifest.webmanifest",
   };
 }
 
