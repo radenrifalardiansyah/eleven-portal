@@ -37,7 +37,7 @@ export async function createTestimonialClient(input: TestimonialClientInput) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function updateTestimonialClient(id: string, input: TestimonialClientInput) {
@@ -48,7 +48,7 @@ export async function updateTestimonialClient(id: string, input: TestimonialClie
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function deleteTestimonialClient(id: string) {
@@ -58,7 +58,7 @@ export async function deleteTestimonialClient(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function deleteTestimonialClients(items: { id: string }[]) {
@@ -71,7 +71,7 @@ export async function deleteTestimonialClients(items: { id: string }[]) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function reviewTestimonialClients(items: { id: string }[], approve: boolean) {
@@ -84,7 +84,7 @@ export async function reviewTestimonialClients(items: { id: string }[], approve:
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function moveTestimonialClient(id: string, direction: "up" | "down") {
@@ -117,7 +117,7 @@ export async function moveTestimonialClient(id: string, direction: "up" | "down"
   if (e2) throw new Error(e2.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function importTestimonialClients(rows: TestimonialClientInput[]) {
@@ -129,7 +129,7 @@ export async function importTestimonialClients(rows: TestimonialClientInput[]) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function reviewTestimonialClient(id: string, approve: boolean) {
@@ -142,5 +142,5 @@ export async function reviewTestimonialClient(id: string, approve: boolean) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/testimonials");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }

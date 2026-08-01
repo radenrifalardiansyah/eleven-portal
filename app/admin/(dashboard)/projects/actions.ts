@@ -41,6 +41,7 @@ export async function createProject(input: ProjectInput) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
 }
 
 export async function updateProject(id: string, input: ProjectInput) {
@@ -52,6 +53,7 @@ export async function updateProject(id: string, input: ProjectInput) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
   revalidatePath(`/case-study/${input.slug}`);
 }
 
@@ -63,6 +65,7 @@ export async function deleteProject(id: string, slug: string) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
   revalidatePath(`/case-study/${slug}`);
 }
 
@@ -77,6 +80,7 @@ export async function deleteProjects(items: { id: string; slug: string }[]) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/case-study/${item.slug}`);
 }
 
@@ -91,6 +95,7 @@ export async function reviewProjects(items: { id: string; slug: string }[], appr
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/case-study/${item.slug}`);
 }
 
@@ -125,6 +130,7 @@ export async function moveProject(id: string, direction: "up" | "down") {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
 }
 
 export async function importProjects(rows: ProjectImportRow[]) {
@@ -167,6 +173,7 @@ export async function importProjects(rows: ProjectImportRow[]) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
 }
 
 export async function reviewProject(id: string, slug: string, approve: boolean) {
@@ -180,5 +187,6 @@ export async function reviewProject(id: string, slug: string, approve: boolean) 
 
   revalidatePath("/admin/projects");
   revalidatePath("/case-study");
+  revalidatePath("/");
   revalidatePath(`/case-study/${slug}`);
 }

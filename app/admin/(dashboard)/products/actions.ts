@@ -44,6 +44,7 @@ export async function createProduct(input: ProductInput) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
 }
 
 export async function updateProduct(id: string, input: ProductInput) {
@@ -55,6 +56,7 @@ export async function updateProduct(id: string, input: ProductInput) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath(`/products/${input.slug}`);
 }
 
@@ -76,6 +78,7 @@ export async function deleteProduct(id: string, slug: string) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath(`/products/${slug}`);
 }
 
@@ -100,6 +103,7 @@ export async function deleteProducts(items: { id: string; slug: string }[]) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/products/${item.slug}`);
 }
 
@@ -114,6 +118,7 @@ export async function reviewProducts(items: { id: string; slug: string }[], appr
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/products/${item.slug}`);
 }
 
@@ -148,6 +153,7 @@ export async function moveProduct(id: string, direction: "up" | "down") {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
 }
 
 export async function importProducts(rows: ProductImportRow[]) {
@@ -181,6 +187,7 @@ export async function importProducts(rows: ProductImportRow[]) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
 }
 
 export async function reviewProduct(id: string, slug: string, approve: boolean) {
@@ -194,5 +201,6 @@ export async function reviewProduct(id: string, slug: string, approve: boolean) 
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/");
   revalidatePath(`/products/${slug}`);
 }

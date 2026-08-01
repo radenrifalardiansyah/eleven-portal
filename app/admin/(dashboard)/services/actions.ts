@@ -32,6 +32,7 @@ export async function createService(input: ServiceInput) {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
 }
 
 export async function updateService(id: string, input: ServiceInput) {
@@ -43,6 +44,7 @@ export async function updateService(id: string, input: ServiceInput) {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
   revalidatePath(`/services/${input.slug}`);
 }
 
@@ -64,6 +66,7 @@ export async function deleteService(id: string, slug: string) {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
   revalidatePath(`/services/${slug}`);
 }
 
@@ -88,6 +91,7 @@ export async function deleteServices(items: { id: string; slug: string }[]) {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/services/${item.slug}`);
 }
 
@@ -102,6 +106,7 @@ export async function reviewServices(items: { id: string; slug: string }[], appr
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/services/${item.slug}`);
 }
 
@@ -136,6 +141,7 @@ export async function moveService(id: string, direction: "up" | "down") {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
 }
 
 export async function importServices(rows: ServiceInput[]) {
@@ -148,6 +154,7 @@ export async function importServices(rows: ServiceInput[]) {
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
 }
 
 export async function reviewService(id: string, slug: string, approve: boolean) {
@@ -161,5 +168,6 @@ export async function reviewService(id: string, slug: string, approve: boolean) 
 
   revalidatePath("/admin/services");
   revalidatePath("/services");
+  revalidatePath("/");
   revalidatePath(`/services/${slug}`);
 }

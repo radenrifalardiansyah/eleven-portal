@@ -19,5 +19,5 @@ export async function updatePageSectionContent(
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/page-sections");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }

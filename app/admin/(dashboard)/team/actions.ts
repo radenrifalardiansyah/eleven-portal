@@ -33,6 +33,7 @@ export async function createTeamMember(input: TeamMemberInput) {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
 }
 
 export async function updateTeamMember(id: string, input: TeamMemberInput) {
@@ -44,6 +45,7 @@ export async function updateTeamMember(id: string, input: TeamMemberInput) {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
   revalidatePath(`/team/${input.slug}`);
 }
 
@@ -55,6 +57,7 @@ export async function deleteTeamMember(id: string, slug: string) {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
   revalidatePath(`/team/${slug}`);
 }
 
@@ -69,6 +72,7 @@ export async function deleteTeamMembers(items: { id: string; slug: string }[]) {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/team/${item.slug}`);
 }
 
@@ -83,6 +87,7 @@ export async function reviewTeamMembers(items: { id: string; slug: string }[], a
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/team/${item.slug}`);
 }
 
@@ -117,6 +122,7 @@ export async function moveTeamMember(id: string, direction: "up" | "down") {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
 }
 
 export async function importTeamMembers(rows: TeamMemberInput[]) {
@@ -129,6 +135,7 @@ export async function importTeamMembers(rows: TeamMemberInput[]) {
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
 }
 
 export async function reviewTeamMember(id: string, slug: string, approve: boolean) {
@@ -142,5 +149,6 @@ export async function reviewTeamMember(id: string, slug: string, approve: boolea
 
   revalidatePath("/admin/team");
   revalidatePath("/team");
+  revalidatePath("/");
   revalidatePath(`/team/${slug}`);
 }

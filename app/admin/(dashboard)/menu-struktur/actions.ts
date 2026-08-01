@@ -54,7 +54,7 @@ export async function createMenuItem(input: MenuItemInput) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
-  if (input.show_on_portal || input.show_section_on_portal) revalidatePath("/", "layout");
+  if (input.show_on_portal || input.show_section_on_portal) revalidatePath("/");
 }
 
 export async function updateMenuItem(id: string, input: MenuItemInput) {
@@ -64,7 +64,7 @@ export async function updateMenuItem(id: string, input: MenuItemInput) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function deleteMenuItem(id: string) {
@@ -74,7 +74,7 @@ export async function deleteMenuItem(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin", "layout");
-  revalidatePath("/", "layout");
+  revalidatePath("/");
 }
 
 export async function moveMenuItem(id: string, direction: "up" | "down") {

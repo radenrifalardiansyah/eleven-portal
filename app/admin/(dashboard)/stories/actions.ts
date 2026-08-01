@@ -35,6 +35,7 @@ export async function createStory(input: StoryInput) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
 }
 
 export async function updateStory(id: string, input: StoryInput) {
@@ -46,6 +47,7 @@ export async function updateStory(id: string, input: StoryInput) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
   revalidatePath(`/stories/${input.slug}`);
 }
 
@@ -57,6 +59,7 @@ export async function deleteStory(id: string, slug: string) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
   revalidatePath(`/stories/${slug}`);
 }
 
@@ -71,6 +74,7 @@ export async function deleteStories(items: { id: string; slug: string }[]) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/stories/${item.slug}`);
 }
 
@@ -85,6 +89,7 @@ export async function reviewStories(items: { id: string; slug: string }[], appro
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
   for (const item of items) revalidatePath(`/stories/${item.slug}`);
 }
 
@@ -119,6 +124,7 @@ export async function moveStory(id: string, direction: "up" | "down") {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
 }
 
 export async function importStories(rows: StoryInput[]) {
@@ -131,6 +137,7 @@ export async function importStories(rows: StoryInput[]) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
 }
 
 export async function reviewStory(id: string, slug: string, approve: boolean) {
@@ -144,5 +151,6 @@ export async function reviewStory(id: string, slug: string, approve: boolean) {
 
   revalidatePath("/admin/stories");
   revalidatePath("/stories");
+  revalidatePath("/");
   revalidatePath(`/stories/${slug}`);
 }
