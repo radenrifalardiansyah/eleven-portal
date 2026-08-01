@@ -57,8 +57,10 @@ export default async function TeamDetailPage({
 
   const allTeam = await getPublishedTeamMembers();
   const related = allTeam.filter((item) => item.slug !== member.slug).slice(0, 4);
-  const socialEntries = Object.entries(member.socials) as [keyof typeof SOCIAL_ICONS, string][];
-  const sameAs = socialEntries.map(([, href]) => href).filter((href) => href !== "#");
+  const socialEntries = (Object.entries(member.socials) as [keyof typeof SOCIAL_ICONS, string][]).filter(
+    ([, href]) => href && href !== "#"
+  );
+  const sameAs = socialEntries.map(([, href]) => href);
 
   const personJsonLd = {
     "@context": "https://schema.org",
